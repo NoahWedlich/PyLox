@@ -1,5 +1,5 @@
 from tokens import Token, TokenType
-from typing import Union
+from typing import Union, Tuple
 from errors import error
 
 class Scanner:
@@ -135,7 +135,7 @@ class Scanner:
                 return False
         return True
 
-    def scanTokens(self) -> (list[Token], bool):
+    def scanTokens(self) -> Tuple[list[Token], bool]:
         success = True
         while not self.__isAtEnd():
             self.__start = self.__current
