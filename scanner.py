@@ -1,15 +1,17 @@
 from tokens import Token, TokenType
 from typing import Union, Tuple
-from errors import error
+from errors import ErrorHandler
 
 class Scanner:
-    def __init__(self, source:str) -> None:
+    def __init__(self, source:str, errorHandler: ErrorHandler) -> None:
         self.source: str = source
         self.tokens: list[Token] = []
 
         self.__start: int = 0
         self.__current: int = 0
         self.__line: int = 1
+
+        self.errorHandler = errorHandler
 
     def __isAtEnd(self) -> bool:
         return self.__current >= len(self.source)
@@ -36,14 +38,13 @@ class Scanner:
         lexeme = self.source[self.__start:self.__current]
         self.tokens.append(Token(tokenType, lexeme, literal, self.__line))
 
-    def __string(self) -> bool:
+    def __string(self) -> None:
         while self.__peek() != "\"" and not self.__isAtEnd():
             if self.__peek() == "\n": self.__line += 1
             self.__advance()
         
         if self.__isAtEnd():
-            error(self.__line, "Unterminated string.")
-            return False
+            self.errorHandler.error(self.__line, "Unterminated string.")
 
         self.__advance()
         
@@ -84,7 +85,7 @@ class Scanner:
         tokenType = self.__keyword(text)
         self.__addToken(tokenType, text)
 
-    def __scanToken(self) -> bool:
+    def __scanToken(self) -> None:
         currentChar = self.__advance()
         if currentChar == "(":
             self.__addToken(TokenType.LEFT_PAREN)
@@ -120,7 +121,7 @@ class Scanner:
             else:
                 self.__addToken(TokenType.SLASH)
         elif currentChar == "\"":
-            return self.__string()
+            self.__string()
         elif currentChar in (" ", "\r", "\t"):
             pass
         elif currentChar == "\n":
@@ -131,19 +132,15 @@ class Scanner:
             elif currentChar.isalpha() or currentChar == "_":
                 self.__identifier()
             else:
-                error(self.__line, "Unexpected character.")
-                return False
-        return True
+                self.errorHandler.error(self.__line, "Unexpected character.")
 
-    def scanTokens(self) -> Tuple[list[Token], bool]:
-        success = True
+    def scanTokens(self) -> list[Token]:
         while not self.__isAtEnd():
             self.__start = self.__current
-            if not self.__scanToken():
-                success = False
+            self.__scanToken()
         
         self.tokens.append(Token(TokenType.EOF, "", "", self.__line))
-        return self.tokens, success
+        return self.tokens
 
     def dumpTokens(self):
         for token in self.tokens:

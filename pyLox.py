@@ -1,36 +1,35 @@
 import sys
 from scanner import Scanner
-from errors import error
+from errors import ErrorHandler
 
-def run(source: str) -> bool:
-    scanner = Scanner(source)
-    tokens, success = scanner.scanTokens()
+def run(source: str, errorHandler: ErrorHandler) -> None:
+    scanner = Scanner(source, errorHandler)
+    tokens = scanner.scanTokens()
+    if errorHandler.hadError: return
     scanner.dumpTokens()
-    if not success:
-        return False
 
-def runFile(file: str) -> None:
-    print(f"[INFO] Running file {file}")
+def runFile(file: str, errorHandler: ErrorHandler) -> None:
     with open(file, "r") as f:
         source = f.read()
-        if not run(source):
+        if not run(source, errorHandler):
             exit(1)
 
-def runRepl() -> None:
+def runRepl(errorHandler: ErrorHandler) -> None:
     print("PyLox REPL:")
     while True:
         line = input("> ")
         if line == "" or line == "exit": break
-        run(line)
+        run(line, errorHandler)
 
 def pyLox():
+    errorHandler = ErrorHandler()
     if len(sys.argv) > 2:
         print("Usage: python pyLox.py [script]")
         exit(1)
     elif len(sys.argv) == 2:
-        runFile(sys.argv[1])
+        runFile(sys.argv[1], errorHandler)
     else:
-        runRepl()
+        runRepl(errorHandler)
 
 if __name__ == '__main__':
     pyLox()
