@@ -10,6 +10,7 @@ class Scanner:
         self.__start: int = 0
         self.__current: int = 0
         self.__line: int = 1
+        self.__char: int = 0
 
         self.errorHandler = errorHandler
 
@@ -26,13 +27,18 @@ class Scanner:
 
     def __advance(self) -> str:
         self.__current += 1
+        self.__char += 1
         return self.source[self.__current - 1]
 
     def __match(self, expected: str) -> bool:
         if self.__isAtEnd(): return False
         if self.source[self.__current] != expected: return False
         self.__current += 1
+        self.__char += 1
         return True
+
+    def __errorSource(self):
+        return self.source[self.__current - self.__char : self.__current]
 
     def __addToken(self, tokenType: TokenType, literal: Union[str, float] = "") -> None:
         lexeme = self.source[self.__start:self.__current]
@@ -40,16 +46,18 @@ class Scanner:
 
     def __string(self) -> None:
         while self.__peek() != "\"" and not self.__isAtEnd():
-            if self.__peek() == "\n": self.__line += 1
+            if self.__peek() == "\n":
+                self.__line += 1
+                self.__char = 0
             self.__advance()
         
         if self.__isAtEnd():
-            self.errorHandler.error(self.__line, "Unterminated string.")
-
-        self.__advance()
-        
-        value = self.source[self.__start + 1 : self.__current - 1]
-        self.__addToken(TokenType.STRING, value)
+            self.errorHandler.error(self.__line, self.__char, "Unterminated string", self.__errorSource())
+        else:
+            self.__advance()
+            
+            value = self.source[self.__start + 1 : self.__current - 1]
+            self.__addToken(TokenType.STRING, value)
 
     def __number(self) -> None:
         while self.__peek().isnumeric(): self.__advance()
@@ -126,13 +134,14 @@ class Scanner:
             pass
         elif currentChar == "\n":
             self.__line += 1
+            self.__char = 0
         else:
             if currentChar.isnumeric():
                 self.__number()
             elif currentChar.isalpha() or currentChar == "_":
                 self.__identifier()
             else:
-                self.errorHandler.error(self.__line, "Unexpected character.")
+                self.errorHandler.error(self.__line, self.__char, f"Unexpected character \"{currentChar}\"", self.__errorSource())
 
     def scanTokens(self) -> list[Token]:
         while not self.__isAtEnd():
