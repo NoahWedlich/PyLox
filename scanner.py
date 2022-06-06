@@ -42,15 +42,13 @@ class Scanner:
         self.__line += 1
         self.__char = 0
 
-    def __errorSource(self, offset: int = 0):
-        return self.source[self.__current - self.__char : self.__current + offset]
 
     def __error(self, message: str, offset: int = 0) -> None:
-        self.errorHandler.error(self.__line, self.__char + offset, message, self.__errorSource(offset))
+        self.errorHandler.error(self.__line, self.__char + offset, message, offset)
 
     def __addToken(self, tokenType: TokenType, literal: Union[str, float, bool] = "") -> None:
         lexeme = self.source[self.__start:self.__current]
-        self.tokens.append(Token(tokenType, lexeme, literal, self.__line))
+        self.tokens.append(Token(tokenType, lexeme, literal, self.__line, self.__char - (len(lexeme)-1)))
 
     def __string(self) -> None:
         while self.__peek() != "\"" and not self.__isAtEnd():
@@ -156,14 +154,14 @@ class Scanner:
             elif currentChar.isalpha() or currentChar == "_":
                 self.__identifier()
             else:
-                self.__error(f"Unexpected character \*{currentChar}\"")
+                self.__error(f"Unexpected character \"{currentChar}\"")
 
     def scanTokens(self) -> list[Token]:
         while not self.__isAtEnd():
             self.__start = self.__current
             self.__scanToken()
         
-        self.tokens.append(Token(TokenType.EOF, "", "", self.__line))
+        self.__addToken(TokenType.EOF)
         return self.tokens
 
     def dumpTokens(self):

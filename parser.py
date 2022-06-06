@@ -37,14 +37,15 @@ class Parser():
                 return True
         return False
 
-    def __error(self, token: Token, message: str) -> None:
-        self.errorHandler.error(token.line, 0, message, "")
+    def __error(self, token: Token, message: str, offset: int = 0) -> None:
+        if offset < len(token.lexeme): offset = len(token.lexeme)
+        self.errorHandler.error(token.line, token.char, message, offset)
         raise ParseError()
 
-    def __consume(self, tokenType: TokenType, msg: str) -> None:
+    def __consume(self, tokenType: TokenType) -> Union[Token, None]:
         if self.__check(tokenType):
             return self.__advance()
-        self.__error(self.__peek(), msg)
+        return None
 
     def __synchronize(self):
         self.__advance()
@@ -71,8 +72,10 @@ class Parser():
             return Literal(self.__previous().literal)
 
         if self.__match([TokenType.LEFT_PAREN]):
+            openingBracket = self.__previous()
             expr = self.__expression()
-            self.__consume(TokenType.RIGHT_PAREN, "Expected closing bracket")
+            if self.__consume(TokenType.RIGHT_PAREN) == None:
+                self.__error(openingBracket, "Expected closing bracket")
             return Grouping(expr)
 
         self.__error(self.__peek(), "Expected expression")

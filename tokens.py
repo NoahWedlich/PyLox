@@ -58,12 +58,14 @@ class Token:
     lexeme: str
     literal: Union[str, int]
     line: int
+    char: int
 
-    def __init__(self, tokenType: TokenType, lexeme: str, literal: Union[str, float, bool], line: int) -> None:
+    def __init__(self, tokenType: TokenType, lexeme: str, literal: Union[str, float, bool], line: int, char: int) -> None:
         self.tokenType = tokenType
         self.lexeme = lexeme
         self.literal = literal
         self.line = line
+        self.char = char
 
     def __str__(self) -> str:
-        return f"[{self.tokenType.name}] \"{self.lexeme}\" at line {self.line}"
+        return f"[{self.tokenType.name}] \"{self.lexeme}\" at {self.line}:{self.char}"

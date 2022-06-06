@@ -8,9 +8,12 @@ from errors import ErrorHandler
 def run(source: str, errorHandler: ErrorHandler) -> None:
     scanner = Scanner(source, errorHandler)
     tokens = scanner.scanTokens()
+    # scanner.dumpTokens()
     parser = Parser(tokens, errorHandler)
     expr = parser.parse()
-    if errorHandler.hadError: return
+    if errorHandler.hadError:
+        errorHandler.reportErrors(source)
+        return
     print(AstPrinter().print(expr))
 
 def runFile(file: str, errorHandler: ErrorHandler) -> None:
@@ -22,6 +25,7 @@ def runFile(file: str, errorHandler: ErrorHandler) -> None:
 def runRepl(errorHandler: ErrorHandler) -> None:
     print("PyLox REPL:")
     while True:
+        errorHandler.hadError = False
         line = input("> ")
         if line == "" or line == "exit": break
         run(line, errorHandler)
