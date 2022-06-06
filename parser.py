@@ -1,6 +1,6 @@
 from tokens import Token, TokenType
 from errors import ErrorHandler
-from expr import Expr, Binary, Unary, Literal, Grouping
+from expr import Expr, Binary, Unary, Literal, Grouping, ErrorExpr
 from typing import Union
 
 class ParseError(Exception):
@@ -40,12 +40,18 @@ class Parser():
     def __error(self, token: Token, message: str, offset: int = 0) -> None:
         if offset < len(token.lexeme) + 1: offset = len(token.lexeme) - 1
         self.errorHandler.error(token.line, token.char, message, offset)
-        raise ParseError()
+        # raise ParseError()
 
     def __consume(self, tokenType: TokenType) -> Union[Token, None]:
         if self.__check(tokenType):
             return self.__advance()
         return None
+
+    def __checkErrorExpr(self, expr: Expr, operator: Token, message: str) -> bool:
+        if isinstance(expr, ErrorExpr):
+            self.__error(operator, message)
+            return True
+        return False
 
     def __synchronize(self):
         self.__advance()
@@ -78,12 +84,14 @@ class Parser():
                 self.__error(openingBracket, "Expected closing bracket")
             return Grouping(expr)
 
-        self.__error(self.__peek(), "Expected expression")
+        return ErrorExpr()
 
     def __unary(self) -> Expr:
         if self.__match([TokenType.BANG, TokenType.MINUS]):
             operator = self.__previous()
             right = self.__unary()
+            if self.__checkErrorExpr(right, operator, f"Unary operator {operator.lexeme} expected operand"):
+                return ErrorExpr()
             return Unary(operator, right)
         return self.__primary()
 
@@ -92,6 +100,8 @@ class Parser():
         while self.__match([TokenType.SLASH, TokenType.STAR]):
             operator = self.__previous()
             right = self.__unary()
+            self.__checkErrorExpr(expr, operator, f"Binary operator {operator.lexeme} expected left operand")
+            self.__checkErrorExpr(right, operator, f"Binary operator {operator.lexeme} expected right operand")
             expr = Binary(expr, operator, right)
         return expr
 
@@ -100,6 +110,8 @@ class Parser():
         while self.__match([TokenType.MINUS, TokenType.PLUS]):
             operator = self.__previous()
             right = self.__factor()
+            self.__checkErrorExpr(expr, operator, f"Binary operator {operator.lexeme} expected left operand")
+            self.__checkErrorExpr(right, operator, f"Binary operator {operator.lexeme} expected right operand")
             expr = Binary(expr, operator, right)
         return expr
 
@@ -108,6 +120,8 @@ class Parser():
         while self.__match([TokenType.GREATER, TokenType.GREATE_EQUAL, TokenType.LESS, TokenType.LESS_EQUAL]):
             operator = self.__previous()
             right = self.__term()
+            self.__checkErrorExpr(expr, operator, f"Binary operator {operator.lexeme} expected left operand")
+            self.__checkErrorExpr(right, operator, f"Binary operator {operator.lexeme} expected right operand")
             expr = Binary(expr, operator, right)
         return expr
 
@@ -116,6 +130,8 @@ class Parser():
         while self.__match([TokenType.BANG_EQUAL, TokenType.EQUAL_EQUAL]):
             operator = self.__previous()
             right = self.__comparison()
+            self.__checkErrorExpr(expr, operator, f"Binary operator {operator.lexeme} expected left operand")
+            self.__checkErrorExpr(right, operator, f"Binary operator {operator.lexeme} expected right operand")
             expr = Binary(expr, operator, right)
         return expr
         

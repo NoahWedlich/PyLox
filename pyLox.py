@@ -13,7 +13,6 @@ def run(source: str, errorHandler: ErrorHandler) -> None:
     expr = parser.parse()
     if errorHandler.hadError:
         errorHandler.reportErrors(source)
-        return
     print(AstPrinter().print(expr))
 
 def runFile(file: str, errorHandler: ErrorHandler) -> None:

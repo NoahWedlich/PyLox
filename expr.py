@@ -11,10 +11,16 @@ class Visitor(ABC):
     def visitLiteralExpr(self, expr): pass
     @abstractmethod
     def visitUnaryExpr(self, expr): pass
+    @abstractmethod
+    def visitErrorExpr(self, expr): pass
 
 class Expr(ABC):
     @abstractmethod
     def accept(self, visitor: Visitor): pass
+
+class ErrorExpr(Expr):
+    def accept(self, visitor: Visitor):
+        return visitor.visitErrorExpr(self)
 
 class Binary(Expr):
     def __init__(self, left: Expr, operator: Token, right: Expr) -> None:
@@ -70,3 +76,6 @@ class AstPrinter(Visitor):
 
     def visitUnaryExpr(self, expr: Unary) -> str:
         return self.__parenthesize(expr.operator.lexeme, [expr.right])
+
+    def visitErrorExpr(self, expr: ErrorExpr) -> str:
+        return "ErrorExpr"

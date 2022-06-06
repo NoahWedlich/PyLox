@@ -1,3 +1,5 @@
+from typing import Tuple
+
 class ErrorHandler:
     def __init__(self) -> None:
         self.hadError = False
@@ -11,7 +13,7 @@ class ErrorHandler:
         sourceLines = sourceCode.split("\n")
         for error in self.__errors:
             line, char, message, offset = error
-            source = sourceLines[line-1][0:char + offset]
+            source = sourceLines[line-1]#[0:char + offset]
             linePrefix = str(line) + " | "
             print(f"Error: {message}\n")
             print(f"\t{linePrefix}{source}")
