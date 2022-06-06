@@ -25,9 +25,10 @@ class Scanner:
         if self.__current + 1 >= len(self.source): return "\0"
         return self.source[self.__current + 1]
 
-    def __advance(self) -> str:
-        self.__current += 1
-        self.__char += 1
+    def __advance(self, amount: int = 1) -> str:
+        for _ in range(amount):
+            self.__current += 1
+            self.__char += 1
         return self.source[self.__current - 1]
 
     def __match(self, expected: str) -> bool:
@@ -37,8 +38,15 @@ class Scanner:
         self.__char += 1
         return True
 
+    def __newLine(self):
+        self.__line += 1
+        self.__char = 0
+
     def __errorSource(self, offset: int = 0):
         return self.source[self.__current - self.__char : self.__current + offset]
+
+    def __error(self, message: str, offset: int = 0) -> None:
+        self.errorHandler.error(self.__line, self.__char + offset, message, self.__errorSource(offset))
 
     def __addToken(self, tokenType: TokenType, literal: Union[str, float] = "") -> None:
         lexeme = self.source[self.__start:self.__current]
@@ -47,12 +55,11 @@ class Scanner:
     def __string(self) -> None:
         while self.__peek() != "\"" and not self.__isAtEnd():
             if self.__peek() == "\n":
-                self.__line += 1
-                self.__char = 0
+                self.__newLine()
             self.__advance()
         
         if self.__isAtEnd():
-            self.errorHandler.error(self.__line, self.__char, "Unterminated string", self.__errorSource())
+            self.__error("Unterminated string")
         else:
             self.__advance()
             
@@ -130,13 +137,11 @@ class Scanner:
                 while self.__current + 1 < len(self.source) and (self.__peek() != "*" or self.__peekNext() != "/"):
                     curChar = self.__advance()
                     if curChar == "\n":
-                        self.__line += 1
-                        self.__char = 0
+                        self.__newLine()
                 if self.__peek() == "*" and self.__peekNext() == "/":
-                    self.__advance()
-                    self.__advance()
+                    self.__advance(2)
                 elif self.__current + 1 >= len(self.source):
-                    self.errorHandler.error(self.__line, self.__char + 1, "Unterminated comment", self.__errorSource(1))
+                    self.__error("Unterminated comment", 1)
             else:
                 self.__addToken(TokenType.SLASH)
         elif currentChar == "\"":
@@ -144,15 +149,14 @@ class Scanner:
         elif currentChar in (" ", "\r", "\t"):
             pass
         elif currentChar == "\n":
-            self.__line += 1
-            self.__char = 0
+            self.__newLine()
         else:
             if currentChar.isnumeric():
                 self.__number()
             elif currentChar.isalpha() or currentChar == "_":
                 self.__identifier()
             else:
-                self.errorHandler.error(self.__line, self.__char, f"Unexpected character \"{currentChar}\"", self.__errorSource())
+                self.__error(f"Unexpected character \*{currentChar}\"")
 
     def scanTokens(self) -> list[Token]:
         while not self.__isAtEnd():
