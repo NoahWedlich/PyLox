@@ -20,6 +20,8 @@ class TokenType(AutoNumber):
     SEMICOLON = ()
     SLASH = ()
     STAR = ()
+    QUERY = ()
+    COLON = ()
 
     BANG = ()
     BANG_EQUAL = ()
@@ -51,6 +53,7 @@ class TokenType(AutoNumber):
     VAR = ()
     WHILE = ()
 
+    ERROR = ()
     EOF = ()
 
 class Token:

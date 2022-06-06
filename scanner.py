@@ -120,6 +120,10 @@ class Scanner:
             self.__addToken(TokenType.STAR)
         elif currentChar == ";":
             self.__addToken(TokenType.SEMICOLON)
+        elif currentChar == "?":
+            self.__addToken(TokenType.QUERY)
+        elif currentChar == ":":
+            self.__addToken(TokenType.COLON)
         elif currentChar == "!":
             self.__addToken(TokenType.BANG_EQUAL if self.__match("=") else TokenType.BANG)
         elif currentChar == "=":
@@ -155,6 +159,7 @@ class Scanner:
                 self.__identifier()
             else:
                 self.__error(f"Unexpected character \"{currentChar}\"")
+                self.__addToken(TokenType.ERROR)
 
     def scanTokens(self) -> list[Token]:
         while not self.__isAtEnd():

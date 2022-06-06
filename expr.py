@@ -13,6 +13,8 @@ class Visitor(ABC):
     def visitUnaryExpr(self, expr): pass
     @abstractmethod
     def visitErrorExpr(self, expr): pass
+    @abstractmethod
+    def visitTernaryExpr(self, expr): pass
 
 class Expr(ABC):
     @abstractmethod
@@ -30,6 +32,17 @@ class Binary(Expr):
     
     def accept(self, visitor: Visitor):
         return visitor.visitBinaryExpr(self)
+
+class Ternary(Expr):
+    def __init__(self, left: Expr, leftOp: Token, mid: Expr, rightOp: Token, right: Expr) -> None:
+        self.left: Expr = left
+        self.leftOp: Token = leftOp
+        self.mid: Expr = mid
+        self.rightOp: Token = rightOp
+        self.right: Expr = right
+
+    def accept(self, visitor: Visitor):
+        return visitor.visitTernaryExpr(self)
 
 class Grouping(Expr):
     def __init__(self, expression: Expr) -> None:
@@ -79,3 +92,8 @@ class AstPrinter(Visitor):
 
     def visitErrorExpr(self, expr: ErrorExpr) -> str:
         return "ErrorExpr"
+
+    def visitTernaryExpr(self, expr: Ternary):
+        lO = expr.leftOp.lexeme
+        rO = expr.rightOp.lexeme
+        return f"({lO} {expr.left.accept(self)} ({rO} {expr.mid.accept(self)} {expr.right.accept(self)}))"

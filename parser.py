@@ -1,6 +1,6 @@
 from tokens import Token, TokenType
 from errors import ErrorHandler
-from expr import Expr, Binary, Unary, Literal, Grouping, ErrorExpr
+from expr import Expr, Binary, Ternary, Unary, Literal, Grouping, ErrorExpr, Ternary
 from typing import Union
 
 class ParseError(Exception):
@@ -135,15 +135,32 @@ class Parser():
             expr = Binary(expr, operator, right)
         return expr
 
-    def __expression(self) -> Expr:
+    def __ternary(self) -> Expr:
         expr = self.__equality()
+        if self.__match([TokenType.QUERY]):
+            leftOp = self.__previous()
+            midExpr = self.__equality()
+            rightOp = self.__consume(TokenType.COLON)
+            right = self.__equality()
+            if not rightOp:
+                self.__error(leftOp, "Ternary operator expected colon")
+                rightOp = Token(TokenType.ERROR, "ERROR", "", leftOp.line, leftOp.char)
+            self.__checkErrorExpr(expr, leftOp, f"Ternary operator {leftOp.lexeme} expected condition")
+            self.__checkErrorExpr(midExpr, rightOp, f"Ternary operator {rightOp.lexeme} expected left operand")
+            self.__checkErrorExpr(right, rightOp, f"Ternary operator {rightOp.lexeme} expected right operand")
+            expr = Ternary(expr, leftOp, midExpr, rightOp, right)
+        return expr
+
+
+    def __expression(self) -> Expr:
+        expr = self.__ternary()
         while self.__match([TokenType.COMMA]):
             operator = self.__previous()
             right = self.__comparison()
             self.__checkErrorExpr(expr, operator, f"Binary operator {operator.lexeme} expected left operand")
             self.__checkErrorExpr(right, operator, f"Binary operator {operator.lexeme} expected right operand")
             expr = Binary(expr, operator, right)
-        self.__checkErrorExpr(expr, Token(TokenType.EOF, "", "", 0, 0), "Expected expression")
+        self.__checkErrorExpr(expr, Token(TokenType.ERROR, "", "", 0, 0), "Expected expression")
         return expr
 
     def parse(self) -> Union[Expr, None]:
