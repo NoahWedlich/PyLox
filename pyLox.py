@@ -3,6 +3,7 @@ from expr import Expr, Binary, Unary, Literal, Grouping, AstPrinter
 from tokens import Token, TokenType
 from scanner import Scanner
 from parser import Parser
+from interpreter import Interpreter
 from errors import ErrorHandler
 
 def run(source: str, errorHandler: ErrorHandler) -> None:
@@ -14,7 +15,9 @@ def run(source: str, errorHandler: ErrorHandler) -> None:
     if errorHandler.hadError:
         errorHandler.reportErrors(source)
         return
-    print(AstPrinter().print(expr))
+    # print(AstPrinter().print(expr))
+    interpreter = Interpreter()
+    print(interpreter.evaluate(expr))
 
 def runFile(file: str, errorHandler: ErrorHandler) -> None:
     with open(file, "r") as f:
