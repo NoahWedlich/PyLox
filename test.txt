@@ -1,4 +1,7 @@
 // this is a comment
+/*
+* this is a comment
+*/
 (( )){} // grouping stuff
-!*+-/=<> <= == ? // operators
-"hallo ?
+!*+-/=<> <= == // operators
+"hallo" /* **string** */

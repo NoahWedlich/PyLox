@@ -37,8 +37,8 @@ class Scanner:
         self.__char += 1
         return True
 
-    def __errorSource(self):
-        return self.source[self.__current - self.__char : self.__current]
+    def __errorSource(self, offset: int = 0):
+        return self.source[self.__current - self.__char : self.__current + offset]
 
     def __addToken(self, tokenType: TokenType, literal: Union[str, float] = "") -> None:
         lexeme = self.source[self.__start:self.__current]
@@ -125,7 +125,18 @@ class Scanner:
             self.__addToken(TokenType.GREATE_EQUAL if self.__match("=") else TokenType.GREATER)
         elif currentChar == "/":
             if self.__match("/"):
-                while self.__peek() != "\n" and not self.__isAtEnd(): self.__advance()
+                while not self.__isAtEnd() and self.__peek() != "\n" : self.__advance()
+            elif self.__match("*"):
+                while self.__current + 1 < len(self.source) and (self.__peek() != "*" or self.__peekNext() != "/"):
+                    curChar = self.__advance()
+                    if curChar == "\n":
+                        self.__line += 1
+                        self.__char = 0
+                if self.__peek() == "*" and self.__peekNext() == "/":
+                    self.__advance()
+                    self.__advance()
+                elif self.__current + 1 >= len(self.source):
+                    self.errorHandler.error(self.__line, self.__char + 1, "Unterminated comment", self.__errorSource(1))
             else:
                 self.__addToken(TokenType.SLASH)
         elif currentChar == "\"":
