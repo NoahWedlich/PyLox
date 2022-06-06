@@ -1,4 +1,6 @@
 import sys
+from expr import Expr, Binary, Unary, Literal, Grouping, AstPrinter
+from tokens import Token, TokenType
 from scanner import Scanner
 from errors import ErrorHandler
 
@@ -31,5 +33,12 @@ def pyLox():
     else:
         runRepl(errorHandler)
 
+def tempMain():
+    expr = Binary(Unary(Token(TokenType.MINUS, "-", "", 1), Literal(123)), 
+           Token(TokenType.STAR, "*", "", 1), 
+           Grouping(Literal(45.67)))
+    print(AstPrinter().print(expr))
+
 if __name__ == '__main__':
-    pyLox()
+    # pyLox()
+    tempMain()
