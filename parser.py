@@ -137,8 +137,14 @@ class Parser():
 
     def __expression(self) -> Expr:
         expr = self.__equality()
+        while self.__match([TokenType.COMMA]):
+            operator = self.__previous()
+            right = self.__comparison()
+            self.__checkErrorExpr(expr, operator, f"Binary operator {operator.lexeme} expected left operand")
+            self.__checkErrorExpr(right, operator, f"Binary operator {operator.lexeme} expected right operand")
+            expr = Binary(expr, operator, right)
         self.__checkErrorExpr(expr, Token(TokenType.EOF, "", "", 0, 0), "Expected expression")
-        return self.__equality()
+        return expr
 
     def parse(self) -> Union[Expr, None]:
         try:
