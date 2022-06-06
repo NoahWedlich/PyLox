@@ -134,9 +134,10 @@ class Parser():
             self.__checkErrorExpr(right, operator, f"Binary operator {operator.lexeme} expected right operand")
             expr = Binary(expr, operator, right)
         return expr
-        
 
     def __expression(self) -> Expr:
+        expr = self.__equality()
+        self.__checkErrorExpr(expr, Token(TokenType.EOF, "", "", 0, 0), "Expected expression")
         return self.__equality()
 
     def parse(self) -> Union[Expr, None]:
