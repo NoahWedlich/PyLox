@@ -48,7 +48,7 @@ class Scanner:
     def __error(self, message: str, offset: int = 0) -> None:
         self.errorHandler.error(self.__line, self.__char + offset, message, self.__errorSource(offset))
 
-    def __addToken(self, tokenType: TokenType, literal: Union[str, float] = "") -> None:
+    def __addToken(self, tokenType: TokenType, literal: Union[str, float, bool] = "") -> None:
         lexeme = self.source[self.__start:self.__current]
         self.tokens.append(Token(tokenType, lexeme, literal, self.__line))
 

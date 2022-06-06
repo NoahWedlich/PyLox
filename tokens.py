@@ -59,7 +59,7 @@ class Token:
     literal: Union[str, int]
     line: int
 
-    def __init__(self, tokenType: TokenType, lexeme: str, literal: Union[str, float], line: int) -> None:
+    def __init__(self, tokenType: TokenType, lexeme: str, literal: Union[str, float, bool], line: int) -> None:
         self.tokenType = tokenType
         self.lexeme = lexeme
         self.literal = literal

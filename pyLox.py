@@ -2,13 +2,16 @@ import sys
 from expr import Expr, Binary, Unary, Literal, Grouping, AstPrinter
 from tokens import Token, TokenType
 from scanner import Scanner
+from parser import Parser
 from errors import ErrorHandler
 
 def run(source: str, errorHandler: ErrorHandler) -> None:
     scanner = Scanner(source, errorHandler)
     tokens = scanner.scanTokens()
+    parser = Parser(tokens, errorHandler)
+    expr = parser.parse()
     if errorHandler.hadError: return
-    scanner.dumpTokens()
+    print(AstPrinter().print(expr))
 
 def runFile(file: str, errorHandler: ErrorHandler) -> None:
     with open(file, "r") as f:
@@ -40,5 +43,5 @@ def tempMain():
     print(AstPrinter().print(expr))
 
 if __name__ == '__main__':
-    # pyLox()
-    tempMain()
+    pyLox()
+    # tempMain()

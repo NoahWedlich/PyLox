@@ -33,8 +33,8 @@ class Grouping(Expr):
         return visitor.visitGroupingExpr(self)
 
 class Literal(Expr):
-    def __init__(self, value: Union[str, float]) -> None:
-        self.value: Union[str, float] = value
+    def __init__(self, value: Union[str, float, bool]) -> None:
+        self.value: Union[str, float, bool] = value
 
     def accept(self, visitor: Visitor):
         return visitor.visitLiteralExpr(self)
