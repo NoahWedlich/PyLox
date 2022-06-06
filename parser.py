@@ -38,7 +38,7 @@ class Parser():
         return False
 
     def __error(self, token: Token, message: str, offset: int = 0) -> None:
-        if offset < len(token.lexeme): offset = len(token.lexeme)
+        if offset < len(token.lexeme) + 1: offset = len(token.lexeme) - 1
         self.errorHandler.error(token.line, token.char, message, offset)
         raise ParseError()
 
