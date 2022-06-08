@@ -1,4 +1,3 @@
-from ctypes import py_object
 from expr import Visitor, Expr, Literal, Grouping, Unary, Binary, Ternary, ErrorExpr
 from tokens import TokenType, Token
 from typing import Union
