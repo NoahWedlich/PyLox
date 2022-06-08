@@ -74,6 +74,8 @@ class Interpreter(Visitor):
             return left * right
         elif expr.operator.tokenType == TokenType.SLASH:
             self.__checkNumberOperands(expr.operator, left, right)
+            if right == 0:
+                raise PyLoxRuntimeError(expr.operator, f"Division by zero")
             return left / right
         elif expr.operator.tokenType == TokenType.LESS:
             self.__checkNumberOperands(expr.operator, left, right)
