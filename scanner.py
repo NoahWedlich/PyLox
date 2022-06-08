@@ -131,7 +131,7 @@ class Scanner:
         elif currentChar == "<":
             self.__addToken(TokenType.LESS_EQUAL if self.__match("=") else TokenType.LESS)
         elif currentChar == ">":
-            self.__addToken(TokenType.GREATE_EQUAL if self.__match("=") else TokenType.GREATER)
+            self.__addToken(TokenType.GREATER_EQUAL if self.__match("=") else TokenType.GREATER)
         elif currentChar == "/":
             if self.__match("/"):
                 while not self.__isAtEnd() and self.__peek() != "\n" : self.__advance()

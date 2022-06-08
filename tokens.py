@@ -28,7 +28,7 @@ class TokenType(AutoNumber):
     EQUAL = ()
     EQUAL_EQUAL = ()
     GREATER = ()
-    GREATE_EQUAL = ()
+    GREATER_EQUAL = ()
     LESS = ()
     LESS_EQUAL = ()
 

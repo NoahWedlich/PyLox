@@ -10,9 +10,12 @@ def run(source: str, interpreter: Interpreter, errorHandler: ErrorHandler) -> No
     scanner = Scanner(source, errorHandler)
     tokens = scanner.scanTokens()
     errorHandler.reportErrors(source)
+
     parser = Parser(tokens, errorHandler)
     expr = parser.parse()
-    errorHandler.reportErrors(source)
+    if errorHandler.reportErrors(source):
+        return
+
     interpreter.interpret(expr)
     errorHandler.reportErrors(source)
 
@@ -29,9 +32,10 @@ def runRepl(interpreter: Interpreter, errorHandler: ErrorHandler) -> None:
     print("PyLox REPL:")
     while True:
         errorHandler.hadError = False
+        errorHandler.hadRuntimeError = False
         line = input("> ")
         if line == "" or line == "exit": break
-        run(interpreter, line, errorHandler)
+        run(line, interpreter, errorHandler)
 
 def pyLox():
     errorHandler = ErrorHandler()

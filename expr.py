@@ -1,6 +1,7 @@
 from typing import Union
 from tokens import Token
 from abc import ABC, abstractmethod
+from plobject import PLObjType, PLObject
 
 class Visitor(ABC):
     @abstractmethod
@@ -24,6 +25,28 @@ class ErrorExpr(Expr):
     def accept(self, visitor: Visitor):
         return visitor.visitErrorExpr(self)
 
+class Literal(Expr):
+    def __init__(self, value: PLObject) -> None:
+        self.value: PLObject = value
+
+    def accept(self, visitor: Visitor):
+        return visitor.visitLiteralExpr(self)
+
+class Grouping(Expr):
+    def __init__(self, expression: Expr) -> None:
+        self.expression: Expr = expression
+    
+    def accept(self, visitor: Visitor):
+        return visitor.visitGroupingExpr(self)
+
+class Unary(Expr):
+    def __init__(self, operator: Token, right: Expr):
+        self.operator: Token = operator
+        self.right: Expr = right
+    
+    def accept(self, visitor: Visitor):
+        return visitor.visitUnaryExpr(self)
+
 class Binary(Expr):
     def __init__(self, left: Expr, operator: Token, right: Expr) -> None:
         self.left: Expr = left
@@ -43,28 +66,6 @@ class Ternary(Expr):
 
     def accept(self, visitor: Visitor):
         return visitor.visitTernaryExpr(self)
-
-class Grouping(Expr):
-    def __init__(self, expression: Expr) -> None:
-        self.expression: Expr = expression
-    
-    def accept(self, visitor: Visitor):
-        return visitor.visitGroupingExpr(self)
-
-class Literal(Expr):
-    def __init__(self, value: Union[str, float, bool]) -> None:
-        self.value: Union[str, float, bool] = value
-
-    def accept(self, visitor: Visitor):
-        return visitor.visitLiteralExpr(self)
-
-class Unary(Expr):
-    def __init__(self, operator: Token, right: Expr):
-        self.operator: Token = operator
-        self.right: Expr = right
-    
-    def accept(self, visitor: Visitor):
-        return visitor.visitUnaryExpr(self)
 
 class AstPrinter(Visitor):
     def print(self, expr: Expr) -> str:

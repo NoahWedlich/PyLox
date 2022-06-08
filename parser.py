@@ -2,6 +2,7 @@ from tokens import Token, TokenType
 from errors import ErrorHandler
 from expr import Expr, Binary, Ternary, Unary, Literal, Grouping, ErrorExpr, Ternary
 from typing import Union
+from plobject import PLObjType, PLObject
 
 class ParseError(Exception):
     pass
@@ -70,12 +71,14 @@ class Parser():
             self.__advance()
 
     def __primary(self) -> Expr:
-        if self.__match([TokenType.FALSE]): return Literal(False)
-        if self.__match([TokenType.TRUE]): return Literal(True)
-        if self.__match([TokenType.NIL]): return Literal(None)
+        if self.__match([TokenType.FALSE]): return Literal(PLObject(PLObjType.BOOL, False))
+        if self.__match([TokenType.TRUE]): return Literal(PLObject(PLObjType.BOOL, True))
+        if self.__match([TokenType.NIL]): return Literal(PLObject(PLObjType.NIL, None))
 
-        if self.__match([TokenType.STRING, TokenType.NUMBER]):
-            return Literal(self.__previous().literal)
+        if self.__match([TokenType.STRING]):
+            return Literal(PLObject(PLObjType.STRING, self.__previous().literal))
+        if self.__match([TokenType.NUMBER]):
+            return Literal(PLObject(PLObjType.NUMBER, self.__previous().literal))
 
         if self.__match([TokenType.LEFT_PAREN]):
             openingBracket = self.__previous()
@@ -117,7 +120,7 @@ class Parser():
 
     def __comparison(self) -> Expr:
         expr = self.__term()
-        while self.__match([TokenType.GREATER, TokenType.GREATE_EQUAL, TokenType.LESS, TokenType.LESS_EQUAL]):
+        while self.__match([TokenType.GREATER, TokenType.GREATER_EQUAL, TokenType.LESS, TokenType.LESS_EQUAL]):
             operator = self.__previous()
             right = self.__term()
             self.__checkErrorExpr(expr, operator, f"Binary operator {operator.lexeme} expected left operand")
