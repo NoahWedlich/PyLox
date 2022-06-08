@@ -18,16 +18,22 @@ class Visitor(ABC):
     def visitTernaryExpr(self, expr): pass
 
 class Expr(ABC):
+    def __init__(self) -> None:
+        self.rType: PLObjType = PLObjType.UNKNOWN
     @abstractmethod
     def accept(self, visitor: Visitor): pass
 
 class ErrorExpr(Expr):
+    def __init__(self) -> None:
+        self.rType: PLObjType = PLObjType.ERROR
+
     def accept(self, visitor: Visitor):
         return visitor.visitErrorExpr(self)
 
 class Literal(Expr):
     def __init__(self, value: PLObject) -> None:
         self.value: PLObject = value
+        self.rType: PLObjType = value.objType
 
     def accept(self, visitor: Visitor):
         return visitor.visitLiteralExpr(self)
@@ -35,6 +41,7 @@ class Literal(Expr):
 class Grouping(Expr):
     def __init__(self, expression: Expr) -> None:
         self.expression: Expr = expression
+        self.rType: PLObjType = PLObjType.UNKNOWN
     
     def accept(self, visitor: Visitor):
         return visitor.visitGroupingExpr(self)
@@ -43,6 +50,7 @@ class Unary(Expr):
     def __init__(self, operator: Token, right: Expr):
         self.operator: Token = operator
         self.right: Expr = right
+        self.rType: PLObjType = PLObjType.UNKNOWN
     
     def accept(self, visitor: Visitor):
         return visitor.visitUnaryExpr(self)
@@ -52,6 +60,7 @@ class Binary(Expr):
         self.left: Expr = left
         self.operator: Token = operator
         self.right: Expr = right
+        self.rType: PLObjType = PLObjType.UNKNOWN
     
     def accept(self, visitor: Visitor):
         return visitor.visitBinaryExpr(self)
@@ -63,6 +72,7 @@ class Ternary(Expr):
         self.mid: Expr = mid
         self.rightOp: Token = rightOp
         self.right: Expr = right
+        self.rType: PLObjType = PLObjType.UNKNOWN
 
     def accept(self, visitor: Visitor):
         return visitor.visitTernaryExpr(self)

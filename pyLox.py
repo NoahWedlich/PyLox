@@ -1,8 +1,10 @@
+from ftplib import error_perm
 import sys
 from expr import Expr, Binary, Unary, Literal, Grouping, AstPrinter
 from tokens import Token, TokenType
 from scanner import Scanner
 from parser import Parser
+from analyzer import Analyzer
 from interpreter import Interpreter
 from errors import ErrorHandler
 
@@ -13,6 +15,11 @@ def run(source: str, interpreter: Interpreter, errorHandler: ErrorHandler) -> No
 
     parser = Parser(tokens, errorHandler)
     expr = parser.parse()
+    if errorHandler.reportErrors(source):
+        return
+    
+    analyzer = Analyzer(errorHandler)
+    analyzer.typeCheck(expr)
     if errorHandler.reportErrors(source):
         return
 

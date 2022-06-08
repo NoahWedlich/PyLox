@@ -8,6 +8,8 @@ class PLObjType(Enum):
     BOOL = 1
     NUMBER = 2
     STRING = 3
+    UNKNOWN = 4
+    ERROR = 5
 
     def __str__(self):
         return self.name

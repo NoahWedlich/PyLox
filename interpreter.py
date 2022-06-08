@@ -18,23 +18,6 @@ class Interpreter(Visitor):
         except PyLoxRuntimeError as e:
             self.errorHandler.runtimeError(e)
 
-    def __checkNumberOperand(self, operator: Token, operand: Union[str, float, bool]) -> None:
-        if not isinstance(operand, float):
-            raise PyLoxRuntimeError(operator, f"Operand for '{operator.lexeme}' must be a number")
-
-    def __checkNumberOperands(self, operator: Token, left: Union[str, float, bool], right: Union[str, float, bool]) -> None:
-        if not isinstance(left, float):
-            if not isinstance(right, float):
-                raise PyLoxRuntimeError(operator, f"Both operands of '{operator.lexeme}' must be numbers")
-            else:
-                raise PyLoxRuntimeError(operator, f"Left operand of '{operator.lexeme}' must be a number")
-        elif not isinstance(right, float):
-            raise PyLoxRuntimeError(operator, f"Right operand of '{operator.lexeme}' must be a number")
-
-    def __checkSameOperandTypes(self, operator: Token, left: Union[str, float, bool], right: Union[str, float, bool]) -> None:
-        if type(left) != type(right):
-            raise PyLoxRuntimeError(operator, f"Operands of '{operator.lexeme}' must have same type")
-
     def visitLiteralExpr(self, expr: Literal) -> PLObject:
         return expr.value
 
