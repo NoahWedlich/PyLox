@@ -9,21 +9,22 @@ from errors import ErrorHandler
 def run(source: str, errorHandler: ErrorHandler) -> None:
     scanner = Scanner(source, errorHandler)
     tokens = scanner.scanTokens()
-    # scanner.dumpTokens()
+    errorHandler.reportErrors(source)
     parser = Parser(tokens, errorHandler)
     expr = parser.parse()
-    if errorHandler.hadError:
-        errorHandler.reportErrors(source)
-        return
-    # print(AstPrinter().print(expr))
-    interpreter = Interpreter()
-    print(interpreter.evaluate(expr))
+    errorHandler.reportErrors(source)
+    interpreter = Interpreter(errorHandler)
+    interpreter.interpret(expr)
+    errorHandler.reportErrors(source)
 
 def runFile(file: str, errorHandler: ErrorHandler) -> None:
     with open(file, "r") as f:
         source = f.read()
-        if not run(source, errorHandler):
-            exit(1)
+        if run(source, errorHandler):
+            if errorHandler.hadError:
+                exit(65)
+            elif ErrorHandler.hadRuntimeError:
+                exit(70)
 
 def runRepl(errorHandler: ErrorHandler) -> None:
     print("PyLox REPL:")
