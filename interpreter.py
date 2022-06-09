@@ -62,7 +62,7 @@ class Interpreter(Visitor):
                 return left != right
             elif expr.operator.tokenType == TokenType.COMMA:
                 return right
-            return None
+            return PLObject(PLObjType.ERROR, None)
         except PyLoxRuntimeError as e:
             raise PyLoxRuntimeError(expr.operator, e.message)
 
