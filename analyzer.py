@@ -1,6 +1,6 @@
 from errors import ErrorHandler
 from expr import Expr, Grouping, Unary, Binary, Ternary, ErrorExpr
-from stmt import Stmt, ExprStmt, PrintStmt
+from stmt import Stmt, ErrorStmt, ExprStmt, PrintStmt, VarStmt
 from plobject import PLObjType
 from tokens import Token, TokenType
 

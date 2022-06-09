@@ -1,7 +1,7 @@
 from tokens import Token, TokenType
 from errors import ErrorHandler
-from expr import Expr, Binary, Ternary, Unary, Literal, Grouping, ErrorExpr, Ternary
-from stmt import Stmt, ExprStmt, PrintStmt
+from expr import Expr, Binary, Ternary, Unary, Literal, Grouping, ErrorExpr, Ternary, Variable
+from stmt import Stmt, ErrorStmt, ExprStmt, PrintStmt, VarStmt
 from typing import Union
 from plobject import PLObjType, PLObject
 
@@ -42,7 +42,7 @@ class Parser():
     def __error(self, token: Token, message: str, offset: int = 0) -> None:
         if offset < len(token.lexeme) + 1: offset = len(token.lexeme) - 1
         self.errorHandler.error(token.line, token.char, message, offset)
-        # raise ParseError()
+        raise ParseError()
 
     def __consume(self, tokenType: TokenType) -> Union[Token, None]:
         if self.__check(tokenType):
@@ -80,6 +80,9 @@ class Parser():
             return Literal(PLObject(PLObjType.STRING, self.__previous().literal))
         if self.__match([TokenType.NUMBER]):
             return Literal(PLObject(PLObjType.NUMBER, self.__previous().literal))
+
+        if self.__match([TokenType.IDENTIFIER]):
+            return Variable(self.__previous())
 
         if self.__match([TokenType.LEFT_PAREN]):
             openingBracket = self.__previous()
@@ -179,16 +182,33 @@ class Parser():
                 self.__error(Token(TokenType.ERROR, "", "", 1, 1), "Expected semicolon")
         return ExprStmt(expr)
 
+    def __variableStatement(self):
+        name: Token = self.__consume(TokenType.IDENTIFIER)
+        initializer = None
+        if name == None:
+            self.__error(Token(TokenType.ERROR, "", "", 1, 1), "Expected variable name")
+        if self.__match([TokenType.EQUAL]):
+            initializer = self.__expression()
+        if self.__consume(TokenType.SEMICOLON) == None:
+                self.__error(Token(TokenType.ERROR, "", "", 1, 1), "Expected semicolon")
+        return VarStmt(name, initializer)
+        
     def __statement(self) -> Stmt:
         if self.__match([TokenType.PRINT]):
             return self.__printStatement()
         return self.__expressionStatement()
 
+    def __declaration(self) -> Stmt:
+        try:
+            if self.__match([TokenType.VAR]):
+                return self.__variableStatement()
+            return self.__statement()
+        except ParseError:
+            self.__synchronize()
+            return ErrorStmt()
+
     def parse(self) -> list[Stmt]:
         statements: list[Stmt] = []
-        try:
-            while not self.__isAtEnd():
-                statements.append(self.__statement())
-            return statements
-        except ParseError:
-            return []
+        while not self.__isAtEnd():
+            statements.append(self.__declaration())
+        return statements

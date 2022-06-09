@@ -18,10 +18,10 @@ def run(source: str, interpreter: Interpreter, errorHandler: ErrorHandler) -> No
     if errorHandler.reportErrors(source):
         return
     
-    analyzer = Analyzer(errorHandler)
-    analyzer.typeCheckProgram(program)
-    if errorHandler.reportErrors(source):
-        return
+    # analyzer = Analyzer(errorHandler)
+    # analyzer.typeCheckProgram(program)
+    # if errorHandler.reportErrors(source):
+    #     return
 
     interpreter.interpret(program)
     errorHandler.reportErrors(source)

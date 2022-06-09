@@ -1,13 +1,15 @@
-from expr import ExprVisitor, Expr, Literal, Grouping, Unary, Binary, Ternary, ErrorExpr
-from stmt import StmtVisitor, Stmt, ExprStmt, PrintStmt
+from expr import ExprVisitor, Expr, Literal, Grouping, Unary, Binary, Ternary, ErrorExpr, Variable
+from stmt import StmtVisitor, Stmt, ErrorStmt, ExprStmt, PrintStmt, VarStmt
 from tokens import TokenType, Token
 from typing import Union
 from errors import PyLoxRuntimeError, ErrorHandler
 from plobject import PLObjType, PLObject
+from environment import Environment
 
 class Interpreter(ExprVisitor, StmtVisitor):
     def __init__(self, errorHandler: ErrorHandler) -> None:
-        self.errorHandler = errorHandler
+        self.__errorHandler = errorHandler
+        self.__environment = Environment()
 
     def __evaluate(self, expr: Expr) -> PLObject:
         return expr.accept(self)
@@ -20,7 +22,7 @@ class Interpreter(ExprVisitor, StmtVisitor):
             for stmt in program:
                 self.__execute(stmt)
         except PyLoxRuntimeError as e:
-            self.errorHandler.runtimeError(e)
+            self.__errorHandler.runtimeError(e)
 
     def visitLiteralExpr(self, expr: Literal) -> PLObject:
         return expr.value
@@ -76,7 +78,13 @@ class Interpreter(ExprVisitor, StmtVisitor):
         else:
             return self.__evaluate(expr.right)
 
+    def visitVariableExpr(self, expr: Variable) -> PLObject:
+        return self.__environment.get(expr.name)
+
     def visitErrorExpr(self, expr: ErrorExpr):
+        return None
+
+    def visitErrorStmt(self, stmt: ErrorStmt):
         return None
 
     def visitExpressionStmt(self, stmt: ExprStmt) -> None:
@@ -85,3 +93,9 @@ class Interpreter(ExprVisitor, StmtVisitor):
     def visitPrintStmt(self, stmt: PrintStmt) -> None:
         value = self.__evaluate(stmt.expression)
         print(value)
+
+    def visitVarStmt(self, stmt: VarStmt) -> None:
+        value: PLObject = PLObject(PLObjType.NIL, None)
+        if stmt.initializer != None:
+            value = self.__evaluate(stmt.initializer)
+        self.__environment.define(stmt.name.lexeme, value)
