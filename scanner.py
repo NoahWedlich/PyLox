@@ -1,6 +1,6 @@
 from tokens import Token, TokenType
 from typing import Union, Tuple
-from errors import ErrorHandler
+from errors import ErrorHandler, ErrorPos
 
 class Scanner:
     def __init__(self, source:str, errorHandler: ErrorHandler) -> None:
@@ -42,9 +42,9 @@ class Scanner:
         self.__line += 1
         self.__char = 0
 
-
-    def __error(self, message: str, offset: int = 0) -> None:
-        self.errorHandler.error(self.__line, self.__char + offset, message, offset)
+    def __error(self, message: str) -> None:
+        pos = ErrorPos(self.__line, self.__char, self.__line, self.__char)
+        self.errorHandler.error(pos, message)
 
     def __addToken(self, tokenType: TokenType, literal: Union[str, float, bool] = "") -> None:
         lexeme = self.source[self.__start:self.__current]

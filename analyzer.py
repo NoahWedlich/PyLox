@@ -1,4 +1,4 @@
-from errors import ErrorHandler
+from errors import ErrorHandler, ErrorPos
 from expr import Expr, Grouping, Unary, Binary, Ternary, ErrorExpr, Variable
 from stmt import Stmt, ErrorStmt, ExprStmt, PrintStmt, VarStmt
 from plobject import PLObjType
@@ -9,9 +9,8 @@ class Analyzer():
         self.__typeEnv: dict[str, PLObjType] = {}
         self.__errorHandler = errorHandler
 
-    def __error(self, token: Token, message: str, offset: int = 0) -> PLObjType:
-        if offset < len(token.lexeme) + 1: offset = len(token.lexeme) - 1
-        self.__errorHandler.error(token.line, token.char, message, offset)
+    def __error(self, pos: ErrorPos, message: str) -> PLObjType:
+        self.__errorHandler.error(pos, message)
         return PLObjType.ERROR
 
     def __typeCheckVarStmt(self, stmt: VarStmt) -> None:
@@ -36,7 +35,7 @@ class Analyzer():
         elif isinstance(expr, Ternary): return self.__typeCheckTernary(expr)
         elif isinstance(expr, Variable): return self.__typeCheckVariable(expr)
         else:
-            self.__error(Token(TokenType.ERROR, "", "", 0, 0), f"Unhandled type-check")
+            self.__error(expr.pos, f"Unhandled type-check")
             return PLObjType.ERROR
 
     def __typeCheckGrouping(self, expr: Grouping) -> PLObjType:
@@ -49,7 +48,7 @@ class Analyzer():
             expr.rType = PLObjType.ERROR
         if expr.operator.tokenType == TokenType.MINUS:
             if rightType != PLObjType.NUMBER:
-                expr.rType = self.__error(expr.operator, f"Bad type for negation: '{rightType}'")
+                expr.rType = self.__error(expr.operator.pos, f"Bad type for negation: '{rightType}'")
             else:
                 expr.rType = PLObjType.NUMBER
         elif expr.operator.tokenType == TokenType.BANG:
@@ -68,42 +67,42 @@ class Analyzer():
             elif leftType == PLObjType.STRING and rightType == PLObjType.STRING:
                 expr.rType = PLObjType.STRING
             else:
-                expr.rType = self.__error(expr.operator, f"Bad types for addition: '{leftType}' and '{rightType}'")
+                expr.rType = self.__error(expr.operator.pos, f"Bad types for addition: '{leftType}' and '{rightType}'")
         elif expr.operator.tokenType == TokenType.MINUS:
             if leftType == PLObjType.NUMBER and rightType == PLObjType.NUMBER:
                 expr.rType = PLObjType.NUMBER
             else:
-                expr.rType = self.__error(expr.operator, f"Bad types for subtraction: '{leftType}' and '{rightType}'")
+                expr.rType = self.__error(expr.operator.pos, f"Bad types for subtraction: '{leftType}' and '{rightType}'")
         elif expr.operator.tokenType == TokenType.STAR:
             if leftType == PLObjType.NUMBER and rightType == PLObjType.NUMBER:
                 expr.rType = PLObjType.NUMBER
             else:
-                expr.rType = self.__error(expr.operator, f"Bad types for multiplication: '{leftType}' and '{rightType}'")
+                expr.rType = self.__error(expr.operator.pos, f"Bad types for multiplication: '{leftType}' and '{rightType}'")
         elif expr.operator.tokenType == TokenType.SLASH:
             if leftType == PLObjType.NUMBER and rightType == PLObjType.NUMBER:
                 expr.rType = PLObjType.NUMBER
             else:
-                expr.rType = self.__error(expr.operator, f"Bad types for division: '{leftType}' and '{rightType}'")
+                expr.rType = self.__error(expr.operator.pos, f"Bad types for division: '{leftType}' and '{rightType}'")
         elif expr.operator.tokenType == TokenType.LESS:
             if leftType == PLObjType.NUMBER and rightType == PLObjType.NUMBER:
                 expr.rType = PLObjType.BOOL
             else:
-                expr.rType = self.__error(expr.operator, f"Bad types for less-than comparison: '{leftType}' and '{rightType}'")
+                expr.rType = self.__error(expr.operator.pos, f"Bad types for less-than comparison: '{leftType}' and '{rightType}'")
         elif expr.operator.tokenType == TokenType.LESS_EQUAL:
             if leftType == PLObjType.NUMBER and rightType == PLObjType.NUMBER:
                 expr.rType = PLObjType.BOOL
             else:
-                expr.rType = self.__error(expr.operator, f"Bad types for less-equals comparison: '{leftType}' and '{rightType}'")
+                expr.rType = self.__error(expr.operator.pos, f"Bad types for less-equals comparison: '{leftType}' and '{rightType}'")
         elif expr.operator.tokenType == TokenType.GREATER:
             if leftType == PLObjType.NUMBER and rightType == PLObjType.NUMBER:
                 expr.rType = PLObjType.BOOL
             else:
-                expr.rType = self.__error(expr.operator, f"Bad types for greater-than comparison: '{leftType}' and '{rightType}'")
+                expr.rType = self.__error(expr.operator.pos, f"Bad types for greater-than comparison: '{leftType}' and '{rightType}'")
         elif expr.operator.tokenType == TokenType.GREATER_EQUAL:
             if leftType == PLObjType.NUMBER and rightType == PLObjType.NUMBER:
                 expr.rType = PLObjType.BOOL
             else:
-                expr.rType = self.__error(expr.operator, f"Bad types for greater-equals comparison: '{leftType}' and '{rightType}'")
+                expr.rType = self.__error(expr.operator.pos, f"Bad types for greater-equals comparison: '{leftType}' and '{rightType}'")
         elif expr.operator.tokenType == TokenType.EQUAL_EQUAL:
             expr.rType = PLObjType.BOOL
         elif expr.operator.tokenType == TokenType.BANG_EQUAL:
@@ -122,14 +121,14 @@ class Analyzer():
             if leftType == rightType:
                 expr.rType = leftType
             else:
-                expr.rType = self.__error(expr.leftOp, f"Operands of ternary condition have different types: '{leftType}' and '{rightType}'")
+                expr.rType = self.__error(expr.leftOp.pos, f"Operands of ternary condition have different types: '{leftType}' and '{rightType}'")
         else:
-            expr.rType = self.__error(expr.leftOp, "Invalid ternary operator")
+            expr.rType = self.__error(expr.leftOp.pos, "Invalid ternary operator")
         return expr.rType
 
     def __typeCheckVariable(self, expr: Variable) -> PLObjType:
         if expr.name.lexeme in self.__typeEnv:
             expr.rType = self.__typeEnv[expr.name.lexeme]
         else:
-            expr.rType = self.__error(Token(TokenType.ERROR, "", "", 0, 0), f"Undefined variable '{expr.name.lexeme}'")
+            expr.rType = self.__error(expr.pos, f"Undefined variable '{expr.name.lexeme}'")
         return expr.rType

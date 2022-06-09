@@ -2,6 +2,7 @@ from typing import Union
 from tokens import Token
 from abc import ABC, abstractmethod
 from plobject import PLObjType, PLObject
+from errors import ErrorPos
 
 class ExprVisitor(ABC):
     @abstractmethod
@@ -21,19 +22,22 @@ class ExprVisitor(ABC):
 
 class Expr(ABC):
     def __init__(self) -> None:
+        self.pos: ErrorPos = ErrorPos(0, 0, 0, 0)
         self.rType: PLObjType = PLObjType.UNKNOWN
     @abstractmethod
     def accept(self, visitor: ExprVisitor): pass
 
 class ErrorExpr(Expr):
-    def __init__(self) -> None:
+    def __init__(self, pos: ErrorPos) -> None:
+        self.pos: ErrorPos = pos
         self.rType: PLObjType = PLObjType.ERROR
 
     def accept(self, visitor: ExprVisitor):
         return visitor.visitErrorExpr(self)
 
 class Literal(Expr):
-    def __init__(self, value: PLObject) -> None:
+    def __init__(self, value: PLObject, pos: ErrorPos) -> None:
+        self.pos: ErrorPos = pos
         self.value: PLObject = value
         self.rType: PLObjType = value.objType
 
@@ -41,7 +45,8 @@ class Literal(Expr):
         return visitor.visitLiteralExpr(self)
 
 class Grouping(Expr):
-    def __init__(self, expression: Expr) -> None:
+    def __init__(self, expression: Expr, pos: ErrorPos) -> None:
+        self.pos: ErrorPos = pos
         self.expression: Expr = expression
         self.rType: PLObjType = PLObjType.UNKNOWN
     
@@ -49,7 +54,8 @@ class Grouping(Expr):
         return visitor.visitGroupingExpr(self)
 
 class Unary(Expr):
-    def __init__(self, operator: Token, right: Expr):
+    def __init__(self, operator: Token, right: Expr, pos: ErrorPos):
+        self.pos: ErrorPos = pos
         self.operator: Token = operator
         self.right: Expr = right
         self.rType: PLObjType = PLObjType.UNKNOWN
@@ -58,7 +64,8 @@ class Unary(Expr):
         return visitor.visitUnaryExpr(self)
 
 class Binary(Expr):
-    def __init__(self, left: Expr, operator: Token, right: Expr) -> None:
+    def __init__(self, left: Expr, operator: Token, right: Expr, pos: ErrorPos) -> None:
+        self.pos: ErrorPos = pos
         self.left: Expr = left
         self.operator: Token = operator
         self.right: Expr = right
@@ -68,7 +75,8 @@ class Binary(Expr):
         return visitor.visitBinaryExpr(self)
 
 class Ternary(Expr):
-    def __init__(self, left: Expr, leftOp: Token, mid: Expr, rightOp: Token, right: Expr) -> None:
+    def __init__(self, left: Expr, leftOp: Token, mid: Expr, rightOp: Token, right: Expr, pos: ErrorPos) -> None:
+        self.pos: ErrorPos = pos
         self.left: Expr = left
         self.leftOp: Token = leftOp
         self.mid: Expr = mid
@@ -80,7 +88,8 @@ class Ternary(Expr):
         return visitor.visitTernaryExpr(self)
 
 class Variable(Expr):
-    def __init__(self, name: Token) -> None:
+    def __init__(self, name: Token, pos: ErrorPos) -> None:
+        self.pos: ErrorPos = pos
         self.name: Token = name
         self.rType: PLObjType = PLObjType.UNKNOWN
     

@@ -13,4 +13,4 @@ class Environment():
         if name.lexeme in self.__values:
             return self.__values[name.lexeme]
         else:
-            raise PyLoxRuntimeError(name, f"Undefined variable '{name.lexeme}'")
+            raise PyLoxRuntimeError(name.pos, f"Undefined variable '{name.lexeme}'")

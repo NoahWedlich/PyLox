@@ -1,5 +1,5 @@
 from tokens import Token, TokenType
-from errors import ErrorHandler
+from errors import ErrorHandler, ErrorPos
 from expr import Expr, Binary, Ternary, Unary, Literal, Grouping, ErrorExpr, Ternary, Variable
 from stmt import Stmt, ErrorStmt, ExprStmt, PrintStmt, VarStmt
 from typing import Union
@@ -14,6 +14,17 @@ class Parser():
         self.__current: int = 0
 
         self.errorHandler = errorHandler
+
+    def __posFromTokens(self, begin: Token = None, end: Token = None) -> ErrorPos:
+        if begin == None: begin = self.__previous()
+        if end == None: end = self.__previous()
+        return ErrorPos(begin.pos.lS, begin.pos.cS, end.pos.lE, end.pos.cE)
+
+    def __posTokenToExpr(self, begin: Token, end: Expr) -> ErrorPos:
+        return ErrorPos(begin.pos.lS, begin.pos.cS, end.pos.lE, end.pos.cE)
+
+    def __posFromExprs(self, begin: Expr, end: Expr) -> ErrorPos:
+        return ErrorPos(begin.pos.lS, begin.pos.cS, end.pos.lE, end.pos.cE)
 
     def __peek(self) -> Token:
         return self.tokens[self.__current]
@@ -39,9 +50,8 @@ class Parser():
                 return True
         return False
 
-    def __error(self, token: Token, message: str, offset: int = 0) -> None:
-        if offset < len(token.lexeme) + 1: offset = len(token.lexeme) - 1
-        self.errorHandler.error(token.line, token.char, message, offset)
+    def __error(self, pos: ErrorPos, message: str) -> None:
+        self.errorHandler.error(pos, message)
         raise ParseError()
 
     def __consume(self, tokenType: TokenType) -> Union[Token, None]:
@@ -51,7 +61,7 @@ class Parser():
 
     def __checkErrorExpr(self, expr: Expr, operator: Token, message: str) -> bool:
         if isinstance(expr, ErrorExpr):
-            self.__error(operator, message)
+            self.__error(operator.pos, message)
             return True
         return False
 
@@ -72,34 +82,39 @@ class Parser():
             self.__advance()
 
     def __primary(self) -> Expr:
-        if self.__match([TokenType.FALSE]): return Literal(PLObject(PLObjType.BOOL, False))
-        if self.__match([TokenType.TRUE]): return Literal(PLObject(PLObjType.BOOL, True))
-        if self.__match([TokenType.NIL]): return Literal(PLObject(PLObjType.NIL, None))
+        if self.__match([TokenType.FALSE]):
+            return Literal(PLObject(PLObjType.BOOL, False), self.__posFromTokens())
+        if self.__match([TokenType.TRUE]):
+            return Literal(PLObject(PLObjType.BOOL, True), self.__posFromTokens())
+        if self.__match([TokenType.NIL]):
+            return Literal(PLObject(PLObjType.NIL, None), self.__posFromTokens())
 
         if self.__match([TokenType.STRING]):
-            return Literal(PLObject(PLObjType.STRING, self.__previous().literal))
+            return Literal(PLObject(PLObjType.STRING, self.__previous().literal),
+            self.__posFromTokens())
         if self.__match([TokenType.NUMBER]):
-            return Literal(PLObject(PLObjType.NUMBER, self.__previous().literal))
+            return Literal(PLObject(PLObjType.NUMBER, self.__previous().literal),
+            self.__posFromTokens())
 
         if self.__match([TokenType.IDENTIFIER]):
-            return Variable(self.__previous())
+            return Variable(self.__previous(), self.__posFromTokens())
 
         if self.__match([TokenType.LEFT_PAREN]):
             openingBracket = self.__previous()
             expr = self.__expression()
             if self.__consume(TokenType.RIGHT_PAREN) == None:
-                self.__error(openingBracket, "Expected closing bracket")
-            return Grouping(expr)
+                self.__error(openingBracket.pos, "Expected closing bracket")
+            return Grouping(expr, self.__posFromTokens(openingBracket, self.__previous()))
 
-        return ErrorExpr()
+        return ErrorExpr(self.__posFromTokens())
 
     def __unary(self) -> Expr:
         if self.__match([TokenType.BANG, TokenType.MINUS]):
             operator = self.__previous()
             right = self.__unary()
             if self.__checkErrorExpr(right, operator, f"Unary operator {operator.lexeme} expected operand"):
-                return ErrorExpr()
-            return Unary(operator, right)
+                return ErrorExpr(self.__posFromTokens())
+            return Unary(operator, right, self.__posTokenToExpr(operator, right))
         return self.__primary()
 
     def __factor(self) -> Expr:
@@ -109,7 +124,7 @@ class Parser():
             right = self.__unary()
             self.__checkErrorExpr(expr, operator, f"Binary operator {operator.lexeme} expected left operand")
             self.__checkErrorExpr(right, operator, f"Binary operator {operator.lexeme} expected right operand")
-            expr = Binary(expr, operator, right)
+            expr = Binary(expr, operator, right, self.__posFromExprs(expr, right))
         return expr
 
     def __term(self) -> Expr:
@@ -119,7 +134,7 @@ class Parser():
             right = self.__factor()
             self.__checkErrorExpr(expr, operator, f"Binary operator {operator.lexeme} expected left operand")
             self.__checkErrorExpr(right, operator, f"Binary operator {operator.lexeme} expected right operand")
-            expr = Binary(expr, operator, right)
+            expr = Binary(expr, operator, right, self.__posFromExprs(expr, right))
         return expr
 
     def __comparison(self) -> Expr:
@@ -129,7 +144,7 @@ class Parser():
             right = self.__term()
             self.__checkErrorExpr(expr, operator, f"Binary operator {operator.lexeme} expected left operand")
             self.__checkErrorExpr(right, operator, f"Binary operator {operator.lexeme} expected right operand")
-            expr = Binary(expr, operator, right)
+            expr = Binary(expr, operator, right, self.__posFromExprs(expr, right))
         return expr
 
     def __equality(self) -> Expr:
@@ -139,7 +154,7 @@ class Parser():
             right = self.__comparison()
             self.__checkErrorExpr(expr, operator, f"Binary operator {operator.lexeme} expected left operand")
             self.__checkErrorExpr(right, operator, f"Binary operator {operator.lexeme} expected right operand")
-            expr = Binary(expr, operator, right)
+            expr = Binary(expr, operator, right, self.__posFromExprs(expr, right))
         return expr
 
     def __ternary(self) -> Expr:
@@ -150,14 +165,13 @@ class Parser():
             rightOp = self.__consume(TokenType.COLON)
             right = self.__equality()
             if not rightOp:
-                self.__error(leftOp, "Ternary operator expected colon")
+                self.__error(leftOp.pos, "Ternary operator expected colon")
                 rightOp = Token(TokenType.ERROR, "ERROR", "", leftOp.line, leftOp.char)
             self.__checkErrorExpr(expr, leftOp, f"Ternary operator {leftOp.lexeme} expected condition")
             self.__checkErrorExpr(midExpr, rightOp, f"Ternary operator {rightOp.lexeme} expected left operand")
             self.__checkErrorExpr(right, rightOp, f"Ternary operator {rightOp.lexeme} expected right operand")
-            expr = Ternary(expr, leftOp, midExpr, rightOp, right)
+            expr = Ternary(expr, leftOp, midExpr, rightOp, right, self.__posFromExprs(expr, right))
         return expr
-
 
     def __expression(self) -> Expr:
         expr = self.__ternary()
@@ -166,31 +180,33 @@ class Parser():
             right = self.__comparison()
             self.__checkErrorExpr(expr, operator, f"Binary operator {operator.lexeme} expected left operand")
             self.__checkErrorExpr(right, operator, f"Binary operator {operator.lexeme} expected right operand")
-            expr = Binary(expr, operator, right)
+            expr = Binary(expr, operator, right, self.__posFromExprs(expr, right))
         self.__checkErrorExpr(expr, Token(TokenType.ERROR, "", "", 0, 0), "Expected expression")
         return expr
 
     def __printStatement(self):
+        printKwd = self.__previous()
         value: Expr = self.__expression()
         if self.__consume(TokenType.SEMICOLON) == None:
-                self.__error(Token(TokenType.ERROR, "", "", 1, 1), "Expected semicolon")
+                self.__error(self.__posTokenToExpr(printKwd, value), "Expected semicolon")
         return PrintStmt(value)
 
     def __expressionStatement(self):
         expr: Expr = self.__expression()
         if self.__consume(TokenType.SEMICOLON) == None:
-                self.__error(Token(TokenType.ERROR, "", "", 1, 1), "Expected semicolon")
+                self.__error(expr.pos, "Expected semicolon")
         return ExprStmt(expr)
 
     def __variableStatement(self):
+        varKwd = self.__previous()
         name: Token = self.__consume(TokenType.IDENTIFIER)
         initializer = None
         if name == None:
-            self.__error(Token(TokenType.ERROR, "", "", 1, 1), "Expected variable name")
+            self.__error(varKwd.pos, "Expected variable name")
         if self.__match([TokenType.EQUAL]):
             initializer = self.__expression()
         if self.__consume(TokenType.SEMICOLON) == None:
-                self.__error(Token(TokenType.ERROR, "", "", 1, 1), "Expected semicolon")
+                self.__error(self.__posTokenToExpr(varKwd, initializer if initializer != None else name), "Expected semicolon")
         return VarStmt(name, initializer)
         
     def __statement(self) -> Stmt:

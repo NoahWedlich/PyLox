@@ -22,7 +22,7 @@ class Interpreter(ExprVisitor, StmtVisitor):
             for stmt in program:
                 self.__execute(stmt)
         except PyLoxRuntimeError as e:
-            self.__errorHandler.runtimeError(e)
+            self.__errorHandler.runtimeError(e.pos)
 
     def visitLiteralExpr(self, expr: Literal) -> PLObject:
         return expr.value
@@ -40,7 +40,7 @@ class Interpreter(ExprVisitor, StmtVisitor):
                 return PLObject(PLObjType.BOOL, not right)
             return PLObject(PLObjType.NIL, None)
         except PyLoxRuntimeError as e:
-            raise PyLoxRuntimeError(expr.operator, e.message)
+            raise PyLoxRuntimeError(expr.operator.pos, e.message)
 
     def visitBinaryExpr(self, expr: Binary) -> PLObject:
         left = self.__evaluate(expr.left)
@@ -70,7 +70,7 @@ class Interpreter(ExprVisitor, StmtVisitor):
                 return right
             return PLObject(PLObjType.ERROR, None)
         except PyLoxRuntimeError as e:
-            raise PyLoxRuntimeError(expr.operator, e.message)
+            raise PyLoxRuntimeError(expr.operator.pos, e.message)
 
     def visitTernaryExpr(self, expr: Ternary) -> PLObject:
         if self.__evaluate(expr.left):

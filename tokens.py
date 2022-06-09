@@ -1,5 +1,6 @@
 from enum import Enum
 from typing import Union
+from errors import ErrorPos
 
 class AutoNumber(Enum):
     def __new__(cls):
@@ -57,18 +58,11 @@ class TokenType(AutoNumber):
     EOF = ()
 
 class Token:
-    tokenType: TokenType
-    lexeme: str
-    literal: Union[str, int]
-    line: int
-    char: int
-
     def __init__(self, tokenType: TokenType, lexeme: str, literal: Union[str, float, bool], line: int, char: int) -> None:
-        self.tokenType = tokenType
-        self.lexeme = lexeme
-        self.literal = literal
-        self.line = line
-        self.char = char
+        self.tokenType: TokenType = tokenType
+        self.lexeme: str = lexeme
+        self.literal: str = literal
+        self.pos: ErrorPos = ErrorPos(line, char, line, char + len(lexeme) - 1)
 
     def __str__(self) -> str:
-        return f"[{self.tokenType.name}] \"{self.lexeme}\" at {self.line}:{self.char}"
+        return f"[{self.tokenType.name}] \"{self.lexeme}\" at {self.pos}"
