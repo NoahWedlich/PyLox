@@ -1,4 +1,4 @@
-from expr import ExprVisitor, Expr, Literal, Grouping, Unary, Binary, Ternary, ErrorExpr, Variable
+from expr import ExprVisitor, Expr, Literal, Grouping, Unary, Binary, Ternary, ErrorExpr, Variable, Assignment
 from stmt import StmtVisitor, Stmt, ErrorStmt, ExprStmt, PrintStmt, VarStmt
 from tokens import TokenType, Token
 from typing import Union
@@ -80,6 +80,11 @@ class Interpreter(ExprVisitor, StmtVisitor):
 
     def visitVariableExpr(self, expr: Variable) -> PLObject:
         return self.__environment.get(expr.name)
+
+    def visitAssignmentExpr(self, expr: Assignment) -> PLObject:
+        value = self.__evaluate(expr.value)
+        self.__environment.assign(expr.name, value)
+        return value
 
     def visitErrorExpr(self, expr: ErrorExpr):
         return None

@@ -18,9 +18,9 @@ def run(source: str, analyzer: Analyzer, interpreter: Interpreter, errorHandler:
     if errorHandler.reportErrors(source):
         return
     
-    analyzer.typeCheckProgram(program)
-    if errorHandler.reportErrors(source):
-        return
+    # analyzer.typeCheckProgram(program)
+    # if errorHandler.reportErrors(source):
+    #     return
 
     interpreter.interpret(program)
     errorHandler.reportErrors(source)

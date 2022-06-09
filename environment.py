@@ -14,3 +14,9 @@ class Environment():
             return self.__values[name.lexeme]
         else:
             raise PyLoxRuntimeError(name.pos, f"Undefined variable '{name.lexeme}'")
+
+    def assign(self, name: Token, value: PLObject) -> None:
+        if name.lexeme in self.__values:
+            self.__values[name.lexeme] = value
+        else:
+            raise PyLoxRuntimeError(name.pos, f"Undefined variable '{name.lexeme}'")

@@ -19,6 +19,8 @@ class ExprVisitor(ABC):
     def visitTernaryExpr(self, expr): pass
     @abstractmethod
     def visitVariableExpr(self, expr): pass
+    @abstractmethod
+    def visitAssignmentExpr(self, expr): pass
 
 class Expr(ABC):
     def __init__(self) -> None:
@@ -96,6 +98,15 @@ class Variable(Expr):
     def accept(self, visitor: ExprVisitor):
         return visitor.visitVariableExpr(self)
 
+class Assignment(Expr):
+    def __init__(self, name: Token, value: Expr, pos: ErrorPos) -> None:
+        self.pos: ErrorPos = pos
+        self.name: Token = name
+        self.value: Expr = value
+
+    def accept(self, visitor: ExprVisitor):
+        return visitor.visitAssignmentExpr(self)
+
 class AstPrinter(ExprVisitor):
     def print(self, expr: Expr) -> str:
         return expr.accept(self)
@@ -130,3 +141,6 @@ class AstPrinter(ExprVisitor):
 
     def visitVariableExpr(self, expr: Variable) -> str:
         return f"(VAR {expr.name.lexeme}"
+
+    def visitAssignmentExpr(self, expr: Assignment) -> str:
+        return f"( = {expr.name} {expr.value.accept(self)})"

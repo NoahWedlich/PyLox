@@ -1,6 +1,6 @@
 from tokens import Token, TokenType
 from errors import ErrorHandler, ErrorPos
-from expr import Expr, Binary, Ternary, Unary, Literal, Grouping, ErrorExpr, Ternary, Variable
+from expr import Expr, Binary, Ternary, Unary, Literal, Grouping, ErrorExpr, Ternary, Variable, Assignment
 from stmt import Stmt, ErrorStmt, ExprStmt, PrintStmt, VarStmt
 from typing import Union
 from plobject import PLObjType, PLObject
@@ -173,11 +173,22 @@ class Parser():
             expr = Ternary(expr, leftOp, midExpr, rightOp, right, self.__posFromExprs(expr, right))
         return expr
 
-    def __expression(self) -> Expr:
+    def __assignment(self) -> Expr:
         expr = self.__ternary()
+        if self.__match([TokenType.EQUAL]):
+            value = self.__ternary()
+            if isinstance(expr, Variable):
+                name = expr.name
+                return Assignment(name, value, self.__posFromExprs(expr, value))
+            else:
+                self.__error(self.__posFromExprs(expr, value), f"Invalid assignment target")
+        return expr
+
+    def __expression(self) -> Expr:
+        expr = self.__assignment()
         while self.__match([TokenType.COMMA]):
             operator = self.__previous()
-            right = self.__comparison()
+            right = self.__assignment()
             self.__checkErrorExpr(expr, operator, f"Binary operator {operator.lexeme} expected left operand")
             self.__checkErrorExpr(right, operator, f"Binary operator {operator.lexeme} expected right operand")
             expr = Binary(expr, operator, right, self.__posFromExprs(expr, right))
