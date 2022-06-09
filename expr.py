@@ -3,7 +3,7 @@ from tokens import Token
 from abc import ABC, abstractmethod
 from plobject import PLObjType, PLObject
 
-class Visitor(ABC):
+class ExprVisitor(ABC):
     @abstractmethod
     def visitBinaryExpr(self, expr): pass
     @abstractmethod
@@ -21,13 +21,13 @@ class Expr(ABC):
     def __init__(self) -> None:
         self.rType: PLObjType = PLObjType.UNKNOWN
     @abstractmethod
-    def accept(self, visitor: Visitor): pass
+    def accept(self, visitor: ExprVisitor): pass
 
 class ErrorExpr(Expr):
     def __init__(self) -> None:
         self.rType: PLObjType = PLObjType.ERROR
 
-    def accept(self, visitor: Visitor):
+    def accept(self, visitor: ExprVisitor):
         return visitor.visitErrorExpr(self)
 
 class Literal(Expr):
@@ -35,7 +35,7 @@ class Literal(Expr):
         self.value: PLObject = value
         self.rType: PLObjType = value.objType
 
-    def accept(self, visitor: Visitor):
+    def accept(self, visitor: ExprVisitor):
         return visitor.visitLiteralExpr(self)
 
 class Grouping(Expr):
@@ -43,7 +43,7 @@ class Grouping(Expr):
         self.expression: Expr = expression
         self.rType: PLObjType = PLObjType.UNKNOWN
     
-    def accept(self, visitor: Visitor):
+    def accept(self, visitor: ExprVisitor):
         return visitor.visitGroupingExpr(self)
 
 class Unary(Expr):
@@ -52,7 +52,7 @@ class Unary(Expr):
         self.right: Expr = right
         self.rType: PLObjType = PLObjType.UNKNOWN
     
-    def accept(self, visitor: Visitor):
+    def accept(self, visitor: ExprVisitor):
         return visitor.visitUnaryExpr(self)
 
 class Binary(Expr):
@@ -62,7 +62,7 @@ class Binary(Expr):
         self.right: Expr = right
         self.rType: PLObjType = PLObjType.UNKNOWN
     
-    def accept(self, visitor: Visitor):
+    def accept(self, visitor: ExprVisitor):
         return visitor.visitBinaryExpr(self)
 
 class Ternary(Expr):
@@ -74,10 +74,10 @@ class Ternary(Expr):
         self.right: Expr = right
         self.rType: PLObjType = PLObjType.UNKNOWN
 
-    def accept(self, visitor: Visitor):
+    def accept(self, visitor: ExprVisitor):
         return visitor.visitTernaryExpr(self)
 
-class AstPrinter(Visitor):
+class AstPrinter(ExprVisitor):
     def print(self, expr: Expr) -> str:
         return expr.accept(self)
 

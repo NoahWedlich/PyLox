@@ -14,16 +14,16 @@ def run(source: str, interpreter: Interpreter, errorHandler: ErrorHandler) -> No
     errorHandler.reportErrors(source)
 
     parser = Parser(tokens, errorHandler)
-    expr = parser.parse()
+    program = parser.parse()
     if errorHandler.reportErrors(source):
         return
     
     analyzer = Analyzer(errorHandler)
-    analyzer.typeCheck(expr)
+    analyzer.typeCheckProgram(program)
     if errorHandler.reportErrors(source):
         return
 
-    interpreter.interpret(expr)
+    interpreter.interpret(program)
     errorHandler.reportErrors(source)
 
 def runFile(file: str, interpreter: Interpreter, errorHandler: ErrorHandler) -> None:

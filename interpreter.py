@@ -1,20 +1,24 @@
-from expr import Visitor, Expr, Literal, Grouping, Unary, Binary, Ternary, ErrorExpr
+from expr import ExprVisitor, Expr, Literal, Grouping, Unary, Binary, Ternary, ErrorExpr
+from stmt import StmtVisitor, Stmt, ExprStmt, PrintStmt
 from tokens import TokenType, Token
 from typing import Union
 from errors import PyLoxRuntimeError, ErrorHandler
 from plobject import PLObjType, PLObject
 
-class Interpreter(Visitor):
+class Interpreter(ExprVisitor, StmtVisitor):
     def __init__(self, errorHandler: ErrorHandler) -> None:
         self.errorHandler = errorHandler
 
     def __evaluate(self, expr: Expr) -> PLObject:
         return expr.accept(self)
 
-    def interpret(self, expr: Expr) -> None:
+    def __execute(self, stmt: Stmt) -> None:
+        stmt.accept(self)
+
+    def interpret(self, program: list[Stmt]) -> None:
         try:
-            value = self.__evaluate(expr)
-            print(value)
+            for stmt in program:
+                self.__execute(stmt)
         except PyLoxRuntimeError as e:
             self.errorHandler.runtimeError(e)
 
@@ -31,7 +35,7 @@ class Interpreter(Visitor):
             if expr.operator.tokenType == TokenType.MINUS:
                 return -right
             elif expr.operator.tokenType == TokenType.BANG:
-                return not right
+                return PLObject(PLObjType.BOOL, not right)
             return PLObject(PLObjType.NIL, None)
         except PyLoxRuntimeError as e:
             raise PyLoxRuntimeError(expr.operator, e.message)
@@ -74,3 +78,10 @@ class Interpreter(Visitor):
 
     def visitErrorExpr(self, expr: ErrorExpr):
         return None
+
+    def visitExpressionStmt(self, stmt: ExprStmt) -> None:
+        self.__evaluate(stmt.expression)
+
+    def visitPrintStmt(self, stmt: PrintStmt) -> None:
+        value = self.__evaluate(stmt.expression)
+        print(value)

@@ -1,6 +1,7 @@
 from tokens import Token, TokenType
 from errors import ErrorHandler
 from expr import Expr, Binary, Ternary, Unary, Literal, Grouping, ErrorExpr, Ternary
+from stmt import Stmt, ExprStmt, PrintStmt
 from typing import Union
 from plobject import PLObjType, PLObject
 
@@ -166,8 +167,28 @@ class Parser():
         self.__checkErrorExpr(expr, Token(TokenType.ERROR, "", "", 0, 0), "Expected expression")
         return expr
 
-    def parse(self) -> Union[Expr, None]:
+    def __printStatement(self):
+        value: Expr = self.__expression()
+        if self.__consume(TokenType.SEMICOLON) == None:
+                self.__error(Token(TokenType.ERROR, "", "", 1, 1), "Expected semicolon")
+        return PrintStmt(value)
+
+    def __expressionStatement(self):
+        expr: Expr = self.__expression()
+        if self.__consume(TokenType.SEMICOLON) == None:
+                self.__error(Token(TokenType.ERROR, "", "", 1, 1), "Expected semicolon")
+        return ExprStmt(expr)
+
+    def __statement(self) -> Stmt:
+        if self.__match([TokenType.PRINT]):
+            return self.__printStatement()
+        return self.__expressionStatement()
+
+    def parse(self) -> list[Stmt]:
+        statements: list[Stmt] = []
         try:
-            return self.__expression()
+            while not self.__isAtEnd():
+                statements.append(self.__statement())
+            return statements
         except ParseError:
-            return None
+            return []
