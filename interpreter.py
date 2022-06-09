@@ -1,5 +1,5 @@
 from expr import ExprVisitor, Expr, Literal, Grouping, Unary, Binary, Ternary, ErrorExpr, Variable, Assignment
-from stmt import StmtVisitor, Stmt, ErrorStmt, ExprStmt, PrintStmt, VarStmt
+from stmt import StmtVisitor, Stmt, ErrorStmt, ExprStmt, PrintStmt, VarStmt, BlockStmt
 from tokens import TokenType, Token
 from typing import Union
 from errors import PyLoxRuntimeError, ErrorHandler
@@ -104,3 +104,12 @@ class Interpreter(ExprVisitor, StmtVisitor):
         if stmt.initializer != None:
             value = self.__evaluate(stmt.initializer)
         self.__environment.define(stmt.name.lexeme, value)
+
+    def visitBlockStmt(self, stmt: BlockStmt) -> None:
+        previous: Environment = self.__environment
+        try:
+            self.__environment = Environment(previous)
+            for statement in stmt.statements:
+                self.__execute(statement)
+        finally:
+            self.__environment = previous

@@ -1,7 +1,7 @@
 from tokens import Token, TokenType
 from errors import ErrorHandler, ErrorPos
 from expr import Expr, Binary, Ternary, Unary, Literal, Grouping, ErrorExpr, Ternary, Variable, Assignment
-from stmt import Stmt, ErrorStmt, ExprStmt, PrintStmt, VarStmt
+from stmt import Stmt, ErrorStmt, ExprStmt, PrintStmt, VarStmt, BlockStmt
 from typing import Union
 from plobject import PLObjType, PLObject
 
@@ -195,20 +195,30 @@ class Parser():
         self.__checkErrorExpr(expr, Token(TokenType.ERROR, "", "", 0, 0), "Expected expression")
         return expr
 
-    def __printStatement(self):
+    def __printStatement(self) -> Stmt:
         printKwd = self.__previous()
         value: Expr = self.__expression()
         if self.__consume(TokenType.SEMICOLON) == None:
                 self.__error(self.__posTokenToExpr(printKwd, value), "Expected semicolon")
         return PrintStmt(value)
 
-    def __expressionStatement(self):
+    def __blockStatement(self) -> Stmt:
+        leftParen = self.__previous()
+        statements: list[Stms] = []
+        while not self.__check(TokenType.RIGHT_BRACE) and not self.__isAtEnd():
+            statements.append(self.__declaration())
+        if self.__consume(TokenType.RIGHT_BRACE) == None:
+            #TODO: Add position to statements
+            self.__error(self.__posTokenToExpr(leftParen, leftParen), "Expected closing brace")
+        return BlockStmt(statements)
+
+    def __expressionStatement(self) -> Stmt:
         expr: Expr = self.__expression()
         if self.__consume(TokenType.SEMICOLON) == None:
                 self.__error(expr.pos, "Expected semicolon")
         return ExprStmt(expr)
 
-    def __variableStatement(self):
+    def __variableStatement(self) -> Stmt:
         varKwd = self.__previous()
         name: Token = self.__consume(TokenType.IDENTIFIER)
         initializer = None
@@ -223,6 +233,8 @@ class Parser():
     def __statement(self) -> Stmt:
         if self.__match([TokenType.PRINT]):
             return self.__printStatement()
+        elif self.__match([TokenType.LEFT_BRACE]):
+            return self.__blockStatement()
         return self.__expressionStatement()
 
     def __declaration(self) -> Stmt:

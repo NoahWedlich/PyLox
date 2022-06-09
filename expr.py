@@ -103,6 +103,7 @@ class Assignment(Expr):
         self.pos: ErrorPos = pos
         self.name: Token = name
         self.value: Expr = value
+        self.rType: PLObjType = PLObjType.UNKNOWN
 
     def accept(self, visitor: ExprVisitor):
         return visitor.visitAssignmentExpr(self)

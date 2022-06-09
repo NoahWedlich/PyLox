@@ -143,7 +143,7 @@ class Scanner:
                 if self.__peek() == "*" and self.__peekNext() == "/":
                     self.__advance(2)
                 elif self.__current + 1 >= len(self.source):
-                    self.__error("Unterminated comment", 1)
+                    self.__error("Unterminated comment")
             else:
                 self.__addToken(TokenType.SLASH)
         elif currentChar == "\"":

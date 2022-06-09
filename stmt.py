@@ -11,6 +11,8 @@ class StmtVisitor(ABC):
     def visitPrintStmt(self, stmt): pass
     @abstractmethod
     def visitVarStmt(self, stmt): pass
+    @abstractmethod
+    def visitBlockStmt(self, stmt): pass
 
 class Stmt(ABC):
     @abstractmethod
@@ -41,3 +43,10 @@ class VarStmt(Stmt):
 
     def accept(self, visitor: StmtVisitor):
         visitor.visitVarStmt(self)
+
+class BlockStmt(Stmt):
+    def __init__(self, statements: list[Stmt]) -> None:
+        self.statements: list[Stmt] = statements
+
+    def accept(self, visitor: StmtVisitor):
+        visitor.visitBlockStmt(self)
