@@ -1,24 +1,32 @@
 from errors import ErrorHandler
-from expr import Expr, Grouping, Unary, Binary, Ternary, ErrorExpr
+from expr import Expr, Grouping, Unary, Binary, Ternary, ErrorExpr, Variable
 from stmt import Stmt, ErrorStmt, ExprStmt, PrintStmt, VarStmt
 from plobject import PLObjType
 from tokens import Token, TokenType
 
 class Analyzer():
     def __init__(self, errorHandler: ErrorHandler) -> None:
-        self.errorHandler = errorHandler
+        self.__typeEnv: dict[str, PLObjType] = {}
+        self.__errorHandler = errorHandler
 
     def __error(self, token: Token, message: str, offset: int = 0) -> PLObjType:
         if offset < len(token.lexeme) + 1: offset = len(token.lexeme) - 1
-        self.errorHandler.error(token.line, token.char, message, offset)
+        self.__errorHandler.error(token.line, token.char, message, offset)
         return PLObjType.ERROR
+
+    def __typeCheckVarStmt(self, stmt: VarStmt) -> None:
+        if stmt.initializer == None:
+            stmt.initializer.rType = PLObjType.NIL
+        else:
+            stmt.initializer.rType = self.__typeCheck(stmt.initializer)
+        self.__typeEnv[stmt.name.lexeme] = stmt.initializer.rType
 
     def typeCheckProgram(self, program: list[Stmt]) -> None:
         for stmt in program:
-            if isinstance(stmt, ExprStmt):
+            if isinstance(stmt, ExprStmt) or isinstance(stmt, PrintStmt):
                 self.__typeCheck(stmt.expression)
-            elif isinstance(stmt, PrintStmt):
-                self.__typeCheck(stmt.expression)
+            elif isinstance(stmt, VarStmt):
+                self.__typeCheckVarStmt(stmt)
 
     def __typeCheck(self, expr: Expr) -> PLObjType:
         if expr.rType != PLObjType.UNKNOWN: return expr.rType
@@ -26,7 +34,10 @@ class Analyzer():
         elif isinstance(expr, Unary): return self.__typeCheckUnary(expr)
         elif isinstance(expr, Binary): return self.__typeCheckBinary(expr)
         elif isinstance(expr, Ternary): return self.__typeCheckTernary(expr)
-        else: return PLObjType.ERROR
+        elif isinstance(expr, Variable): return self.__typeCheckVariable(expr)
+        else:
+            self.__error(Token(TokenType.ERROR, "", "", 0, 0), f"Unhandled type-check")
+            return PLObjType.ERROR
 
     def __typeCheckGrouping(self, expr: Grouping) -> PLObjType:
         expr.rType = self.__typeCheck(expr.expression)
@@ -46,7 +57,7 @@ class Analyzer():
         return expr.rType
 
 
-    def __typeCheckBinary(self, expr: Binary):
+    def __typeCheckBinary(self, expr: Binary) -> PLObjType:
         leftType = self.__typeCheck(expr.left)
         rightType = self.__typeCheck(expr.right)
         if leftType == PLObjType.ERROR or rightType == PLObjType.ERROR:
@@ -101,7 +112,7 @@ class Analyzer():
             expr.rType = rightType
         return expr.rType
 
-    def __typeCheckTernary(self, expr: Ternary):
+    def __typeCheckTernary(self, expr: Ternary) -> PLObjType:
         condType = self.__typeCheck(expr.left)
         leftType = self.__typeCheck(expr.mid)
         rightType = self.__typeCheck(expr.right)
@@ -113,5 +124,12 @@ class Analyzer():
             else:
                 expr.rType = self.__error(expr.leftOp, f"Operands of ternary condition have different types: '{leftType}' and '{rightType}'")
         else:
-            expr.rType = self.__error(expr.leftOp, f"Invalid ternary operator")
+            expr.rType = self.__error(expr.leftOp, "Invalid ternary operator")
+        return expr.rType
+
+    def __typeCheckVariable(self, expr: Variable) -> PLObjType:
+        if expr.name.lexeme in self.__typeEnv:
+            expr.rType = self.__typeEnv[expr.name.lexeme]
+        else:
+            expr.rType = self.__error(Token(TokenType.ERROR, "", "", 0, 0), f"Undefined variable '{expr.name.lexeme}'")
         return expr.rType

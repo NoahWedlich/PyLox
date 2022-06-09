@@ -8,7 +8,7 @@ from analyzer import Analyzer
 from interpreter import Interpreter
 from errors import ErrorHandler
 
-def run(source: str, interpreter: Interpreter, errorHandler: ErrorHandler) -> None:
+def run(source: str, analyzer: Analyzer, interpreter: Interpreter, errorHandler: ErrorHandler) -> None:
     scanner = Scanner(source, errorHandler)
     tokens = scanner.scanTokens()
     errorHandler.reportErrors(source)
@@ -18,42 +18,42 @@ def run(source: str, interpreter: Interpreter, errorHandler: ErrorHandler) -> No
     if errorHandler.reportErrors(source):
         return
     
-    # analyzer = Analyzer(errorHandler)
-    # analyzer.typeCheckProgram(program)
-    # if errorHandler.reportErrors(source):
-    #     return
+    analyzer.typeCheckProgram(program)
+    if errorHandler.reportErrors(source):
+        return
 
     interpreter.interpret(program)
     errorHandler.reportErrors(source)
 
-def runFile(file: str, interpreter: Interpreter, errorHandler: ErrorHandler) -> None:
+def runFile(file: str, analyzer: Analyzer, interpreter: Interpreter, errorHandler: ErrorHandler) -> None:
     with open(file, "r") as f:
         source = f.read()
-        if run(source, interpreter, errorHandler):
+        if run(source, analyzer, interpreter, errorHandler):
             if errorHandler.hadError:
                 exit(65)
             elif ErrorHandler.hadRuntimeError:
                 exit(70)
 
-def runRepl(interpreter: Interpreter, errorHandler: ErrorHandler) -> None:
+def runRepl(analyzer: Analyzer, interpreter: Interpreter, errorHandler: ErrorHandler) -> None:
     print("PyLox REPL:")
     while True:
         errorHandler.hadError = False
         errorHandler.hadRuntimeError = False
         line = input("> ")
         if line == "" or line == "exit": break
-        run(line, interpreter, errorHandler)
+        run(line, analyzer, interpreter, errorHandler)
 
 def pyLox():
     errorHandler = ErrorHandler()
+    analyzer = Analyzer(errorHandler)
     interpreter = Interpreter(errorHandler)
     if len(sys.argv) > 2:
         print("Usage: python pyLox.py [script]")
         exit(1)
     elif len(sys.argv) == 2:
-        runFile(sys.argv[1], interpreter, errorHandler)
+        runFile(sys.argv[1], analyzer, interpreter, errorHandler)
     else:
-        runRepl(interpreter, errorHandler)
+        runRepl(analyzer, interpreter, errorHandler)
 
 def tempMain():
     expr = Binary(Unary(Token(TokenType.MINUS, "-", "", 1), Literal(123)), 

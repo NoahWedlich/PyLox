@@ -82,6 +82,7 @@ class Ternary(Expr):
 class Variable(Expr):
     def __init__(self, name: Token) -> None:
         self.name: Token = name
+        self.rType: PLObjType = PLObjType.UNKNOWN
     
     def accept(self, visitor: ExprVisitor):
         return visitor.visitVariableExpr(self)
