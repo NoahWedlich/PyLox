@@ -1,4 +1,3 @@
-from ftplib import error_perm
 import sys
 from expr import Expr, Binary, Unary, Literal, Grouping, AstPrinter
 from tokens import Token, TokenType
