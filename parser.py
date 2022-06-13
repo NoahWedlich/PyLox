@@ -1,7 +1,7 @@
 from tokens import Token, TokenType
 from errors import ErrorHandler, ErrorPos
-from expr import Expr, Binary, Ternary, Unary, Literal, Grouping, ErrorExpr, Ternary, Variable, Assignment
-from stmt import Stmt, ErrorStmt, ExprStmt, PrintStmt, VarStmt, BlockStmt
+from expr import Expr, Binary, Ternary, Unary, Literal, Grouping, ErrorExpr, Ternary, Variable, Assignment, Logical
+from stmt import Stmt, ErrorStmt, ExprStmt, PrintStmt, VarStmt, BlockStmt, IfStmt
 from typing import Union
 from plobject import PLObjType, PLObject
 
@@ -173,10 +173,30 @@ class Parser():
             expr = Ternary(expr, leftOp, midExpr, rightOp, right, self.__posFromExprs(expr, right))
         return expr
 
-    def __assignment(self) -> Expr:
+    def __and(self) -> Expr:
         expr = self.__ternary()
+        while self.__match([TokenType.AND]):
+            operator = self.__previous()
+            right = self.__ternary()
+            self.__checkErrorExpr(expr, operator, f"Logical operator {operator.lexeme} expected left operand")
+            self.__checkErrorExpr(right, operator, f"Logical operator {operator.lexeme} expected right operand")
+            expr = Logical(expr, operator, right, self.__posFromExprs(expr, right))
+        return expr
+
+    def __or(self) -> Expr:
+        expr = self.__and()
+        while self.__match([TokenType.OR]):
+            operator = self.__previous()
+            right = self.__and()
+            self.__checkErrorExpr(expr, operator, f"Logical operator {operator.lexeme} expected left operand")
+            self.__checkErrorExpr(right, operator, f"Logical operator {operator.lexeme} expected right operand")
+            expr = Logical(expr, operator, right, self.__posFromExprs(expr, right))
+        return expr
+
+    def __assignment(self) -> Expr:
+        expr = self.__or()
         if self.__match([TokenType.EQUAL]):
-            value = self.__ternary()
+            value = self.__or()
             if isinstance(expr, Variable):
                 name = expr.name
                 return Assignment(name, value, self.__posFromExprs(expr, value))
@@ -229,12 +249,27 @@ class Parser():
         if self.__consume(TokenType.SEMICOLON) == None:
                 self.__error(self.__posTokenToExpr(varKwd, initializer if initializer != None else name), "Expected semicolon")
         return VarStmt(name, initializer)
+
+    def __ifStatement(self) -> Stmt:
+        ifKwd = self.__previous()
+        if self.__consume(TokenType.LEFT_PAREN) == None:
+            self.__error(self.__posFromTokens(ifKwd, ifKwd), "Expected '(' after 'if'")
+        condition = self.__expression()
+        if self.__consume(TokenType.RIGHT_PAREN) == None:
+            self.__error(self.__posFromTokens(ifKwd, ifKwd), "Expected ')' after if-condition")
+        thenBranch = self.__statement()
+        elseBranch = None
+        if self.__match([TokenType.ELSE]):
+            elseBranch = self.__statement()
+        return IfStmt(condition, thenBranch, elseBranch)
         
     def __statement(self) -> Stmt:
         if self.__match([TokenType.PRINT]):
             return self.__printStatement()
         elif self.__match([TokenType.LEFT_BRACE]):
             return self.__blockStatement()
+        elif self.__match([TokenType.IF]):
+            return self.__ifStatement()
         return self.__expressionStatement()
 
     def __declaration(self) -> Stmt:

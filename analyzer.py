@@ -1,6 +1,6 @@
 from errors import ErrorHandler, ErrorPos
-from expr import Expr, Grouping, Unary, Binary, Ternary, ErrorExpr, Variable, Assignment
-from stmt import Stmt, ErrorStmt, ExprStmt, PrintStmt, VarStmt, BlockStmt
+from expr import Expr, Grouping, Unary, Binary, Ternary, ErrorExpr, Variable, Assignment, Logical
+from stmt import Stmt, ErrorStmt, ExprStmt, PrintStmt, VarStmt, BlockStmt, IfStmt
 from plobject import PLObjType
 from tokens import Token, TokenType
 from environment import TypeEnvironment
@@ -27,6 +27,12 @@ class Analyzer():
         self.typeCheckProgram(stmt.statements)
         self.__typeEnv = previousTypeEnv
 
+    def __typeCheckIfStmt(self, stmt: IfStmt) -> None:
+        #TODO: Conditional type-checking
+        self.__typeCheck(stmt.condition)
+        self.typeCheckProgram(stmt.thenBranch)
+        self.typeCheckProgram(stmt.elseBranch)
+
     def typeCheckProgram(self, program: list[Stmt]) -> None:
         for stmt in program:
             if isinstance(stmt, ExprStmt) or isinstance(stmt, PrintStmt):
@@ -35,6 +41,8 @@ class Analyzer():
                 self.__typeCheckVarStmt(stmt)
             elif isinstance(stmt, BlockStmt):
                 self.__typeCheckBlockStmt(stmt)
+            elif isinstance(stmt, ifStmt):
+                self.__typeCheckIfStmt(stmt)
 
     def __typeCheck(self, expr: Expr) -> PLObjType:
         if expr.rType != PLObjType.UNKNOWN: return expr.rType
@@ -44,6 +52,7 @@ class Analyzer():
         elif isinstance(expr, Ternary): return self.__typeCheckTernary(expr)
         elif isinstance(expr, Variable): return self.__typeCheckVariable(expr)
         elif isinstance(expr, Assignment): return self.__typeCheckAssignment(expr)
+        elif isinstance(expr, Logical): return self.__typeCheckLogical(expr)
         else:
             self.__error(expr.pos, f"Unhandled type-check")
             return PLObjType.ERROR
@@ -64,7 +73,6 @@ class Analyzer():
         elif expr.operator.tokenType == TokenType.BANG:
             expr.rType = PLObjType.BOOL
         return expr.rType
-
 
     def __typeCheckBinary(self, expr: Binary) -> PLObjType:
         leftType = self.__typeCheck(expr.left)
@@ -147,4 +155,8 @@ class Analyzer():
         expr.rType = self.__typeEnv.assign(expr.name, expr.value.rType)
         if expr.rType == PLObjType.ERROR:
             self.__error(expr.pos, f"Can't reassign undefined variable '{expr.name.lexeme}'")
+        return expr.rType
+
+    def __typeCheckLogical(self, expr: Logical) -> PLObjType:
+        expr.rType = PLObjType.BOOL
         return expr.rType

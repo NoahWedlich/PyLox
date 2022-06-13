@@ -21,6 +21,8 @@ class ExprVisitor(ABC):
     def visitVariableExpr(self, expr): pass
     @abstractmethod
     def visitAssignmentExpr(self, expr): pass
+    @abstractmethod
+    def visitLogicalExpr(self, expr): pass
 
 class Expr(ABC):
     def __init__(self) -> None:
@@ -108,6 +110,17 @@ class Assignment(Expr):
     def accept(self, visitor: ExprVisitor):
         return visitor.visitAssignmentExpr(self)
 
+class Logical(Expr):
+    def __init__(self, left: Expr, operator: Token, right: Expr, pos: ErrorPos) -> None:
+        self.pos: ErrorPos = pos
+        self.left: Expr = left
+        self.operator: Token = operator
+        self.right: Expr = right
+        self.rType: PLObjType = PLObjType.UNKNOWN
+
+    def accept(self, visitor: ExprVisitor):
+        return visitor.visitLogicalExpr(self)
+
 class AstPrinter(ExprVisitor):
     def print(self, expr: Expr) -> str:
         return expr.accept(self)
@@ -145,3 +158,6 @@ class AstPrinter(ExprVisitor):
 
     def visitAssignmentExpr(self, expr: Assignment) -> str:
         return f"( = {expr.name} {expr.value.accept(self)})"
+
+    def visitLogicalExpr(self, expr: Logical):
+        return self.__parenthesize(expr.operator.lexeme, [expr.left, expr.right])

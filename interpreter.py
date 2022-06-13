@@ -1,5 +1,5 @@
-from expr import ExprVisitor, Expr, Literal, Grouping, Unary, Binary, Ternary, ErrorExpr, Variable, Assignment
-from stmt import StmtVisitor, Stmt, ErrorStmt, ExprStmt, PrintStmt, VarStmt, BlockStmt
+from expr import ExprVisitor, Expr, Literal, Grouping, Unary, Binary, Ternary, ErrorExpr, Variable, Assignment, Logical
+from stmt import StmtVisitor, Stmt, ErrorStmt, ExprStmt, PrintStmt, VarStmt, BlockStmt, IfStmt
 from tokens import TokenType, Token
 from typing import Union
 from errors import PyLoxRuntimeError, ErrorHandler
@@ -22,7 +22,7 @@ class Interpreter(ExprVisitor, StmtVisitor):
             for stmt in program:
                 self.__execute(stmt)
         except PyLoxRuntimeError as e:
-            self.__errorHandler.runtimeError(e.pos)
+            self.__errorHandler.runtimeError(e)
 
     def visitLiteralExpr(self, expr: Literal) -> PLObject:
         return expr.value
@@ -86,6 +86,15 @@ class Interpreter(ExprVisitor, StmtVisitor):
         self.__environment.assign(expr.name, value)
         return value
 
+    def visitLogicalExpr(self, expr: Logical) -> PLObject:
+        left = self.__evaluate(expr.left)
+
+        if expr.operator.tokenType == TokenType.OR:
+            if left: return PLObject(PLObjType.BOOL, bool(left))
+        else:
+            if not left: return PLObject(PLObjType.BOOL, bool(left))
+        return PLObject(PLObjType.BOOL, bool(self.__evaluate(expr.right)))
+
     def visitErrorExpr(self, expr: ErrorExpr):
         return None
 
@@ -113,3 +122,9 @@ class Interpreter(ExprVisitor, StmtVisitor):
                 self.__execute(statement)
         finally:
             self.__environment = previous
+
+    def visitIfStmt(self, stmt: IfStmt) -> None:
+        if self.__evaluate(stmt.condition):
+            self.__execute(stmt.thenBranch)
+        elif stmt.elseBranch != None:
+            self.__execute(stmt.elseBranch)
